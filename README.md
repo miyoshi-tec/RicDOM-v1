@@ -5,7 +5,7 @@ Electron・社内ツール・IoT デバイス UI 向け。JSON で書く 10KB �
 | レイヤー | サイズ | 役割 |
 |---------|------:|------|
 | **RicDOM** | 10KB | コア — JSON → DOM 差分更新 + Proxy リアクティビティ |
-| **RicUI** | 67KB | 部品集 — CSS 変数テーマ + ボタン・ポップアップ・スプリッター + 調整パネル |
+| **RicUI** | 68KB | 部品集 — CSS 変数テーマ + ボタン・ポップアップ・スプリッター + 調整パネル |
 
 Virtual DOM を持たず、JSON オブジェクトの差分から実 DOM を直接パッチします。
 Electron やブラウザで、リアルタイムなダッシュボード・パラメータ調整 UI・データ可視化ツールを素早く構築できます。
@@ -83,7 +83,7 @@ npm パッケージとしては公開していません。
 |---------|------:|------|
 | `RicDOM.min.js`    | 10KB | コア（必須） |
 | `RicDOM.lz.min.js` |  7KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
-| `RicUI.min.js`     | 67KB | UI コンポーネント集 + パラメータ調整パネル |
+| `RicUI.min.js`     | 68KB | UI コンポーネント集 + パラメータ調整パネル |
 | `RicUI.lz.min.js`  | 39KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
 
 #### LZ 圧縮版 (`*.lz.min.js`) の使い分け
@@ -97,6 +97,11 @@ npm パッケージとしては公開していません。
   `(0,eval)(...)` で実行する自己展開版。**HTTP 圧縮が走らない配信** (IoT、組込み、
   オフライン Electron 配布、CDN なしの社内サーバー等) で **disk / 転送量を 27-43%
   削減** できる。debug 時は通常版に切り替えるのが楽。
+
+> ⚠️ **CSP 環境の注意 (v0.3.38〜 明記)**: LZ 版は自己展開に `eval` を使うため、
+> Content-Security-Policy を敷いている環境では `script-src` に `'unsafe-eval'` が
+> 必要。厳格な CSP (`'unsafe-eval'` 禁止) を敷いている場合は **素の `*.min.js`
+> を使うこと**（`eval` 不使用、機能・API は LZ 版と完全に同一）。
 
 ```html
 <!-- 通常: HTTP 圧縮が効く環境 -->
@@ -331,6 +336,12 @@ handle.render = (s) => ({
 }
 ```
 
+> **`ctx` を省略すると、その要素の子は diff の対象外になり保持されます。**
+> `canvas` / `video` / サードパーティ製ウィジェット（チャートライブラリ等）が
+> imperative に DOM を書き換える「島」を RicDOM の diff から守るのに使えます
+> （`ref` で DOM 参照を取り、外部ライブラリに渡す）。詳細は SPEC.md「5. Performance
+> & Scale」内「一般化: diff 対象外の島 (canvas / サードパーティ DOM) との共存」を参照。
+
 ### state 更新のルール
 
 ```javascript
@@ -437,6 +448,14 @@ create_ui_page ─ テーマの入口。CSS 変数を注入する
 | `ui_row` | — | — | — | 横に並べる（純レイアウト） |
 | `ui_grid` | — | — | — | CSS grid で並べる（`columns: 3` / `'120px 1fr'` / `'auto-fit 200px'`） |
 | `create_ui_panel` | 有 | 有 | 標準 | セクションの区切り |
+
+> **`create_ui_page` で包めない/包みたくない mount** (別 iframe、既存アプリへの部分導入、
+> 単発のウィジェット埋め込み等) で `ric-*` クラスの要素が無装飾（ブラウザ既定の見た目）に
+> なったら `css_for()` を使う。素の `ric-page` div + `make_css_vars` + `css_for` の
+> 3 点セットで page なしの styled mount が作れる（v0.3.34〜、詳細は
+> [SPEC.md「css_for / make_css_vars」](SPEC.md#css_for--make_css_vars-v0334) /
+> [TUTORIAL.md「page で包めないとき」](TUTORIAL.md#page-で包めないとき--css_for-で埋め込み-v0334) 参照）。
+> ただし portal 系 (popup / tooltip / dialog / toast) は css_for 島では使えない。
 
 ### コンポーネント一覧
 

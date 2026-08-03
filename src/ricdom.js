@@ -336,6 +336,21 @@ const build_dom_node = (raw_node, inherited_namespace = null) => {
     if (child_el) el.appendChild(child_el);
   }
 
+  // select の value は option が生えた後でないと選択に反映できない。
+  // apply_attributes_to_element は子 append より前に呼ばれるため、value 代入
+  // 時点では <option> が 0 個で、ブラウザは自動的に先頭 option を選択してしまう
+  // (その後 value は再適用されないため選択がズレたまま確定する)。
+  // ここで option 構築後にもう一度 value を当て直して確定させる。
+  // 'value' in normalized で判定するのは、未指定時に el.value = undefined を
+  // 実行して "undefined" という文字列の option 選択を試みる事故を避けるため。
+  // build_dom_node は初回 mount・patch 中の新規ノード生成の両方で使われるので、
+  // ここ 1 箇所の修正で両経路をカバーできる。
+  // textarea の value・radio の checked は子要素の有無に依存しないため対象外
+  // (再現しない症状への speculative fix はしない)。
+  if (normalized.tag === 'select' && 'value' in normalized) {
+    el.value = normalized.value;
+  }
+
   return el;
 };
 
