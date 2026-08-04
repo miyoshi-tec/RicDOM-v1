@@ -746,6 +746,13 @@ const { css_for, make_css_vars, ui_button } = require('ricdom/ric_ui'); // ま�
 > **非 portal 部品**(`ui_button` / `ui_input` / `ui_panel` / `ui_text` / `ui_icon` /
 > `ui_radiobutton` 等)に限る。
 
+> **v0.3.38〜: 上記 (a) は console.warn で検知される**。`_page_portal_queue` は
+> 初回 `push` から drain が一度も走らないまま既定 1000ms が経つと、1 回だけ
+> `[RicUI] ... drain されていません ...` を console.warn する
+> (`create_ui_page` の render で同一サイクル内に drain される正常系では発火しない)。
+> throw はしない。(b) の「意図しない親の直下に出る」パターンは drain 自体は
+> 起きているため対象外(検知不能、設計上の別問題)。
+
 ### Surface
 
 #### ui_panel / create_ui_panel
@@ -1004,6 +1011,34 @@ Markdown テキストを VDOM ノードに変換する簡易パーサー。外�
 | Props | 型 | 説明 |
 |-------|------|------|
 | `ctx` | `string[]` | Markdown テキスト（複数渡すと連結） |
+| `transform_text` | `(str) => (vnode\|string)[] \| string` | 任意（v0.3.38〜）。プロセ（通常テキスト）のテキストノードにだけ適用し、戻り値で置換する |
+
+##### transform_text (v0.3.38〜)
+
+プロセ（通常テキスト）を独自の vnode に変換したいときのフック。用途例: 資産 ID
+（`ast_xxx` 等）の自動リンク化。
+
+```javascript
+ui_md_pre({
+  ctx: ['資産 ast_abc123 を参照'],
+  transform_text: (str) => str.split(/(ast_[a-z0-9]+)/).map(
+    (part) => /^ast_/.test(part)
+      ? { tag: 'a', href: `/assets/${part}`, ctx: [part] }
+      : part,
+  ),
+})
+```
+
+FACT:
+
+- **コードブロック（フェンス ` ``` `）とインラインコード（`` `code` ``）には適用されない**
+  （リテラル性を守るため）。見出し / 段落 / リスト項目 / 引用 / テーブルセル / 太字・斜体の
+  中のプロセには適用される（`_parse_inline` の再帰経由）。
+- 例外を投げた場合は `console.error` を出し、元のテキストのまま表示する
+  （NOOP フォールバック、throw しない）。
+- 戻り値の vnode に対して `transform_text` が再帰適用されることはない
+  （無限ループ対策、1 パスのみ消費）。
+- 未指定時は従来の挙動と完全に一致する（挙動を変えない後方互換オプション）。
 
 ##### 対応構文
 
@@ -2011,6 +2046,36 @@ child.render = render_main;
 
 **重要**: 共有 state の mutation は **全 instance が再描画される**（subscriber set が共有されるため）。コード分離の目的には使えるが、**局所 re-render にはならない**。
 
+**FACT (v0.3.38〜明記)**: `create_RicDOM` は `target` が解決済みであれば、呼び出し時点で**同期的に初回描画**を行う（`render` が指定されていれば即座に DOM が構築される。rAF 等を待たない）。そのため、上記のように mount point (`ref: 'main_mount'`) を DOM に作る側のモジュールは、それを `create_RicDOM` の `target` として利用する側より**先に評価されている**必要がある（ES modules では `import` 順、`require` では読み込み順がそのまま評価順になる）。順序が逆だと `target` 未解決のまま作成され、target 探索タイマー待ちの空 instance になる。
+
+> **一般化: diff 対象外の島 (canvas / サードパーティ DOM) との共存 (v0.3.38〜 明記)**
+>
+> 上の `ref: 'main_mount'` + `ctx` 省略の組み合わせは「別 instance を mount する」用途に
+> 限らない。内部実装は「prev/next 両方の `ctx` が省略 (= 空扱い) なら `patch_children` が
+> `is_json_equal([], [])` で即座に短絡し、そのノードの子要素には一切触れない」というだけの
+> 仕組み（`src/ricdom.js` の `patch_children` 内コメント「parent が `<div ref="mount">`
+> のような空 ctx を返して、child instance が外部から DOM を mount するパターンを守る
+> ため」参照）。これは **canvas / video / サードパーティ製ウィジェット（チャートライブラリ、
+> 地図、リッチテキストエディタ等）が imperative に DOM を書き換える「島」を RicDOM の
+> diff から守る**、第一級のユースケースとして使える:
+> ```javascript
+> render(s) {
+>   return {
+>     tag: 'div', ctx: [
+>       { tag: 'h2', ctx: [s.title] },
+>       { tag: 'canvas', ref: 'chart_canvas' }, // ctx 省略 → RicDOM は中身を diff しない
+>     ],
+>   };
+> }
+> // マウント後、canvas への描画はサードパーティ製ライブラリが直接 DOM を触ってよい
+> const chart = new Chart(handle.refs.get('chart_canvas'), { /* ... */ });
+> ```
+> **注意**: 保護が効くのは「そのノード自身が同一 key (or serial key) で再利用され続ける」
+> 間だけ。親の再描画でそのノードの `tag` が変わる／兄弟の並びがズレる等で別ノード扱いに
+> なると、通常の reconciliation（削除→再生成）が起き島の中身は失われる。兄弟が増減する
+> 文脈では `key` を明示して識別を安定させること。新しい `static: true` 等の専用フラグは
+> **無い** — `ctx` 省略が canon。
+
 #### パターン 4: 真の局所 re-render（独立 state、手動同期）
 
 各 instance が独立 state を持てば、mutation はその instance だけで閉じる:
@@ -2072,3 +2137,12 @@ npm test             # 575 テスト
 
 esbuild でバンドル + minify。`--platform=browser`。
 CSS はテンプレートリテラル内に定義（コメント除去済み）。
+
+### LZ 圧縮版 (`*.lz.min.js`) と CSP
+
+`RicDOM.lz.min.js` / `RicUI.lz.min.js` は base64-encoded LZSS を `atob` で展開し
+`(0,eval)(...)` で実行する自己展開 IIFE (`scripts/build_lz_bundle.js` / `scripts/lz.js`
+参照)。**FACT: 自己展開に `eval` を使うため、Content-Security-Policy を敷く環境では
+`script-src` に `'unsafe-eval'` が必要。** 厳格 CSP (`'unsafe-eval'` 禁止) では
+`eval` 不使用の素の `*.min.js` を使う（機能・API は LZ 版と完全に同一）。
+詳細は README.md「LZ 圧縮版の使い分け」節を参照。

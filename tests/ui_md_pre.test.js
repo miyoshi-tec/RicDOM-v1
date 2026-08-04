@@ -80,6 +80,118 @@ describe('table', () => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// transform_text フック (v0.3.38〜、設計OS AI-FUMI v2 consumer 報告)
+// ─────────────────────────────────────────────────────────────
+// プロセ（通常テキスト）のテキストノードにだけ適用され、コードブロック / インライン
+// コードのリテラル性は守られる。例外時は console.error + 元テキストのままの NOOP。
+describe('transform_text フック (v0.3.38〜)', () => {
+
+  // 資産 ID (ast_xxx) をリンク化する例。JSDoc の例と同じ発想。
+  const linkify_ast = (str) => str.split(/(ast_[a-z0-9]+)/).map(
+    (part) => /^ast_/.test(part)
+      ? { tag: 'a', href: `/assets/${part}`, ctx: [part] }
+      : part,
+  );
+
+  test('未指定時は従来と完全一致する（挙動を変えない）', () => {
+    const md = '# T\n\n**b** と *i* と `code`\n\n- item1\n- item2\n\n```js\nast_123\n```';
+    const with_opt    = ui_md_pre({ ctx: [md] });
+    const without_opt = ui_md_pre({ ctx: [md], transform_text: undefined });
+    assert.deepEqual(with_opt, without_opt);
+  });
+
+  test('プロセのテキストが transform_text の戻り値（配列）で置換される', () => {
+    const p = ui_md_pre({ ctx: ['資産 ast_abc123 を参照'], transform_text: linkify_ast }).ctx[0];
+    // ['資産 ', {a}, ' を参照'] の 3 要素に分割されるはず
+    assert.equal(p.tag, 'p');
+    const link = p.ctx.find((n) => typeof n === 'object' && n.tag === 'a');
+    assert.ok(link, 'リンクノードが生成されている');
+    assert.equal(link.href, '/assets/ast_abc123');
+    assert.equal(link.ctx[0], 'ast_abc123');
+  });
+
+  test('transform_text が string を返した場合はそのまま 1 ノードとして置換される', () => {
+    const upper = (str) => str.toUpperCase();
+    const p = ui_md_pre({ ctx: ['hello world'], transform_text: upper }).ctx[0];
+    assert.equal(p.ctx[0], 'HELLO WORLD');
+  });
+
+  test('見出し / リスト / テーブルセル / 引用でもプロセに適用される', () => {
+    const h = ui_md_pre({ ctx: ['# ast_h1'], transform_text: linkify_ast }).ctx[0];
+    assert.ok(h.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), 'heading');
+
+    const li = ui_md_pre({ ctx: ['- ast_li1'], transform_text: linkify_ast }).ctx[0].ctx[0];
+    assert.ok(li.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), 'list item');
+
+    const quote = ui_md_pre({ ctx: ['> ast_q1'], transform_text: linkify_ast }).ctx[0].ctx[0];
+    assert.ok(quote.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), 'blockquote');
+
+    const table = ui_md_pre({ ctx: ['| H |\n|---|\n| ast_td1 |'], transform_text: linkify_ast }).ctx[0];
+    const td = table.ctx[1].ctx[0].ctx[0];
+    assert.ok(td.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), 'table cell');
+  });
+
+  test('コードブロック（フェンス）の中身には適用されない', () => {
+    const p = ui_md_pre({ ctx: ['```\nast_should_not_link\n```'], transform_text: linkify_ast }).ctx[0];
+    const code_node = p.ctx[0];
+    assert.equal(code_node.tag, 'code');
+    // 中身がプレーンな元テキストのまま（リンク化されていない）
+    assert.equal(code_node.ctx[0], 'ast_should_not_link');
+  });
+
+  test('インラインコードの中身には適用されない', () => {
+    const p = ui_md_pre({ ctx: ['ast_outer1 `ast_should_not_link` を'], transform_text: linkify_ast }).ctx[0];
+    const code_node = p.ctx.find((n) => typeof n === 'object' && n.tag === 'code');
+    assert.ok(code_node, 'インラインコードノードが存在する');
+    assert.equal(code_node.ctx[0], 'ast_should_not_link');
+    // 一方でコードの外側のプロセ部分にはリンクが生成されている
+    assert.ok(p.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), '外側のプロセにはリンクがある');
+  });
+
+  test('太字 / 斜体の中のプロセにも適用される（再帰 _parse_inline 経由）', () => {
+    const p = ui_md_pre({ ctx: ['**ast_bold1**'], transform_text: linkify_ast }).ctx[0];
+    const strong = p.ctx.find((n) => typeof n === 'object' && n.tag === 'strong');
+    assert.ok(strong, 'strong ノードが存在する');
+    assert.ok(strong.ctx.some((n) => typeof n === 'object' && n.tag === 'a'), '太字内にリンクが生成される');
+  });
+
+  test('例外を投げたら console.error を出し、元のテキストのまま表示する（NOOP フォールバック）', () => {
+    const throwing = () => { throw new Error('boom'); };
+    const errors = [];
+    const orig_error = console.error;
+    console.error = (...args) => { errors.push(args.join(' ')); };
+    let p;
+    try {
+      p = ui_md_pre({ ctx: ['plain text'], transform_text: throwing }).ctx[0];
+    } finally {
+      console.error = orig_error;
+    }
+    assert.equal(errors.length, 1, 'console.error が 1 回呼ばれる');
+    assert.match(errors[0], /transform_text/);
+    assert.equal(p.ctx[0], 'plain text', '元のテキストのまま表示される');
+  });
+
+  test('置換結果の vnode に再帰的に transform_text が適用されない（無限ループ対策）', () => {
+    // 戻り値の文字列が偶然 transform 対象パターンを含んでいても、
+    // 1 パスで消費されるだけで再度 transform_text にはかけられない。
+    let call_count = 0;
+    const wrap_once = (str) => {
+      call_count++;
+      return [{ tag: 'span', ctx: [str] }]; // vnode の中に元テキストをそのまま埋め込む
+    };
+    const p = ui_md_pre({ ctx: ['ast_x'], transform_text: wrap_once }).ctx[0];
+    assert.equal(call_count, 1, 'transform_text はプロセ 1 個につき 1 回だけ呼ばれる');
+    assert.equal(p.ctx[0].tag, 'span');
+    assert.equal(p.ctx[0].ctx[0], 'ast_x');
+  });
+
+  test('transform_text は rest スプレッドを介して DOM 属性として漏れない', () => {
+    const node = ui_md_pre({ ctx: ['x'], transform_text: linkify_ast });
+    assert.equal('transform_text' in node, false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
 // hljs 未読み込み時の warn (v0.3.22〜、Rancha dev 報告)
 // ─────────────────────────────────────────────────────────────
 // `lang` 指定ありで window.hljs が未定義のとき、初回 1 度だけ console.warn を出す。

@@ -700,6 +700,38 @@ RicDOM の責務は **「state → VDOM → DOM commit」までの同期化** �
 async DOM event (= image decode、video load、fetch 完了) は標準 web API に
 直接乗ってください。
 
+### canvas / サードパーティ DOM と共存する (v0.3.38〜 明記)
+
+Chart.js / 地図ライブラリ / リッチテキストエディタのように、**要素の中身を
+imperative に自分で書き換えるライブラリ**と RicDOM を共存させたい場合は、
+その要素の `ctx` を省略して `ref` だけ付けます:
+
+```javascript
+render(s) {
+  return {
+    tag: 'div', ctx: [
+      { tag: 'h2', ctx: [s.title] },
+      { tag: 'canvas', ref: 'chart_canvas' }, // ctx を省略する（ctx: [] と書いても同じ効果）
+    ],
+  };
+}
+
+const handle = create_RicDOM('#app', state);
+// マウント後、canvas の中身は Chart.js が直接 DOM を書き換えてよい
+const chart = new Chart(handle.refs.get('chart_canvas'), { /* ... */ });
+```
+
+**なぜ動くか**: `ctx` を省略した要素は、再描画のたびに「前回も今回も子要素なし」と
+判定されて DOM 差分パッチが**その要素の中身には一切触れません**（`ctx: []` と書いても
+同じ）。これは元々「別ファイルに分けた子 `create_RicDOM` instance を mount する」ための
+仕組みですが（[SPEC.md「パターン 3」](SPEC.md)参照）、外部ライブラリが imperative に
+書き換える「diff 対象外の島」を作る用途にもそのまま使えます。
+
+**注意**: `key` を付けない兄弟リストで要素の並びが変わると、別ノード扱いされて中身
+（= canvas の描画内容）が失われることがあります。並び替えが起きる文脈では `key` を
+明示してください。専用の `static: true` のようなフラグは提供していません —
+**`ctx` 省略が canon** です。
+
 ### 「after_render フックが欲しい」と思ったら
 
 `handle.after_render(cb)` のような **persistent なコールバック登録型** の API は
