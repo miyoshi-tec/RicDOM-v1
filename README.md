@@ -743,15 +743,25 @@ s.user = { ...s.user, name: 'Taro' };
 
 ## ライセンス
 
-非商用は MIT、商用は要相談です。詳細は [LICENSE](./LICENSE) を参照してください。
+v0.4.0 から、[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)
+と [PolyForm Internal Use License 1.0.0](https://polyformproject.org/licenses/internal-use/1.0.0)
+の**デュアル許諾**（利用者がどちらか選べる）に変更しました。商用の製品組み込み・SaaS・
+受託成果物としての再配布は、従来どおり別途相談です。
 
-| 用途 | ライセンス |
+以下は日本語のサマリです。**法的拘束力を持つのは英文条文**（[LICENSE](./LICENSE) /
+[LICENSE-POLYFORM-NONCOMMERCIAL.md](./LICENSE-POLYFORM-NONCOMMERCIAL.md) /
+[LICENSE-POLYFORM-INTERNAL-USE.md](./LICENSE-POLYFORM-INTERNAL-USE.md)）で、
+この節はあくまで参考情報です。
+
+| 用途 | 適用ライセンス |
 |------|:----:|
-| 個人の学習・研究・趣味プロジェクト | **MIT** |
-| OSS 開発（非商用） | **MIT** |
-| 社内ツール・業務効率化（収益を直接生まない） | **MIT** |
-| 受託開発・SaaS・商用製品への組み込み | **要相談** |
-| 広告収益のあるサイトやアプリ | **要相談** |
+| 個人の学習・研究・趣味プロジェクト / 非営利組織（教育・公的研究・政府等） | **PolyForm Noncommercial 1.0.0** |
+| 企業の社内ツール・業務効率化（社外への再配布なし） | **PolyForm Internal Use 1.0.0** |
+| 商用製品への組み込み・SaaS・受託での再配布 | **要相談** |
 
 「要相談」は禁止ではありません。用途と規模を添えてご連絡ください。
 連絡先: info@miyoshi-seisakusyo.jp
+
+**バージョン境界**: v0.3.38 以前のリリースは、それぞれに同梱された旧ライセンス
+（非商用 MIT / 商用要相談の自作条文）のままです。本デュアル許諾は遡及せず、
+v0.4.0 以降のリリースに適用されます。

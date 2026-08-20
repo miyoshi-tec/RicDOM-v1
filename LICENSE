@@ -2,29 +2,50 @@ RicDOM License
 
 Copyright (c) 2026 Miyoshi Seisakusyo
 
-## Non-Commercial Use
+This software is dual-licensed. You may use it under, at your option, either
+of the following licenses:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to use,
-copy, modify, merge, publish, and distribute the Software for non-commercial
-purposes (personal use, learning, research, OSS development, internal tools
-that do not directly generate revenue), subject to the
-following conditions:
+  (a) PolyForm Noncommercial License 1.0.0
+      <https://polyformproject.org/licenses/noncommercial/1.0.0>
+      Full text: LICENSE-POLYFORM-NONCOMMERCIAL.md
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  (b) PolyForm Internal Use License 1.0.0
+      <https://polyformproject.org/licenses/internal-use/1.0.0>
+      Full text: LICENSE-POLYFORM-INTERNAL-USE.md
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Required Notice (per the Notices section of the PolyForm Noncommercial License
+1.0.0; preserve this line when distributing the software under that license —
+the Internal Use license has no Notices section, since it does not permit
+redistribution):
+
+Required Notice: Copyright (c) 2026 Miyoshi Seisakusyo (https://github.com/miyoshi-tec/RicDOM)
 
 ## Commercial Use
 
-For commercial use (including use in commercial products, SaaS, or
-revenue-generating applications), please contact the author for licensing terms.
+Uses outside the scope of the two licenses above — including but not limited
+to embedding this software in a commercial product, offering it as part of a
+SaaS, or redistributing it as a deliverable of contracted development work —
+require a separate commercial license. Please contact the author.
 
 Contact: info@miyoshi-seisakusyo.jp
+
+## SPDX Note
+
+The `license` field in package.json is set to `"SEE LICENSE IN LICENSE"`
+rather than an SPDX expression. The PolyForm Internal Use License 1.0.0 has
+no SPDX identifier, so an `OR` expression combining it with the Noncommercial
+license would not be a valid SPDX license expression.
+
+## Version Boundary
+
+This dual license applies to v0.4.0 and later releases. Releases up to and
+including v0.3.38 remain under the license bundled with that release (the
+prior "Non-Commercial Use / Commercial Use" terms); this change is not
+retroactive.
+
+## Third-Party Notices
+
+This distribution bundles icon path data derived from the Lucide icon set
+(see docs/icons/icons.json and related files) under the ISC License. That
+attribution is unaffected by, and applies regardless of, which license above
+you choose for the rest of the software.
