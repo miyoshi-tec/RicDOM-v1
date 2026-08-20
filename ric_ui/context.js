@@ -18,6 +18,10 @@ const COLOR_VARS_LIGHT = {
   '--ric-color-accent-fg':  '#ffffff',   // アクセント背景上のテキスト色
   '--ric-tooltip-bg':       '#1f2937',   // ツールチップ背景
   '--ric-tooltip-fg':       '#f9fafb',   // ツールチップ文字色
+  // コードブロック配色 (v0.4.1〜、tooltip とは独立)。light 系テーマなので
+  // 明るい背景 + 暗い文字（従来 tooltip 流用でダーク固定になっていたバグの修正）。
+  '--ric-code-bg':          '#f6f8fa',
+  '--ric-code-fg':          '#24292f',
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 16px rgba(0,0,0,0.10)',
   '--ric-radius':           '8px',
@@ -33,6 +37,9 @@ const COLOR_VARS_DARK = {
   '--ric-color-accent-fg':  '#0f1115',   // 明るいアクセント上には暗いテキスト
   '--ric-tooltip-bg':       '#374151',
   '--ric-tooltip-fg':       '#f9fafb',
+  // コードブロック配色 (v0.4.1〜)。dark 系テーマなので従来の tooltip 値相当を踏襲。
+  '--ric-code-bg':          '#374151',
+  '--ric-code-fg':          '#f9fafb',
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 24px rgba(0,0,0,0.50)',
   '--ric-radius':           '8px',
@@ -51,6 +58,10 @@ const COLOR_VARS_TEAL = {
   '--ric-color-accent-fg':  '#ffffff',
   '--ric-tooltip-bg':       '#0d2b24',
   '--ric-tooltip-fg':       '#f0fdf9',
+  // コードブロック配色 (v0.4.1〜)。light 系テーマなので明るい背景 + 暗い文字。
+  // パレットのボーダー/背景トーン（#c5ddd8 / #e6f9f0）に合わせたティール寄りの明色。
+  '--ric-code-bg':          '#e6f2ef',
+  '--ric-code-fg':          '#0d2b24',
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 16px rgba(0,60,50,0.12)',
   '--ric-radius':           '8px',
@@ -69,6 +80,9 @@ const COLOR_VARS_CYBER = {
   '--ric-color-accent-fg':   '#04070f',   // ネオン上には黒テキスト（コントラスト確保）
   '--ric-tooltip-bg':        'rgba(4,7,15,0.92)',
   '--ric-tooltip-fg':        '#38bdf8',   // ネオン文字
+  // コードブロック配色 (v0.4.1〜)。dark 系テーマなので従来の tooltip 値相当（ネオン）を踏襲。
+  '--ric-code-bg':           'rgba(4,7,15,0.92)',
+  '--ric-code-fg':           '#38bdf8',
   // glass 効果
   '--ric-popup-bg':          'rgba(10,18,40,0.4)',
   '--ric-popup-blur':        'blur(10px)',
@@ -94,6 +108,9 @@ const COLOR_VARS_AQUA = {
   '--ric-color-accent-fg':   '#ffffff',
   '--ric-tooltip-bg':        'rgba(20,45,70,0.92)',
   '--ric-tooltip-fg':        '#f0f8ff',
+  // コードブロック配色 (v0.4.1〜)。light 系テーマなので明るいガラス背景 + 暗い文字。
+  '--ric-code-bg':           'rgba(255,255,255,0.55)',
+  '--ric-code-fg':           '#1a2c3c',
   // glass 効果
   '--ric-popup-bg':          'rgba(255,255,255,0.4)',
   '--ric-popup-blur':        'blur(10px)',

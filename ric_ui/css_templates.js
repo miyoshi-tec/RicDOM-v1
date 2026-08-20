@@ -31,6 +31,8 @@ const _eas = 'var(--ric-easing)';
 const _sh  = 'var(--ric-shadow)';
 const _tb  = 'var(--ric-tooltip-bg)';
 const _tf  = 'var(--ric-tooltip-fg)';
+const _cb  = 'var(--ric-code-bg)';    // コードブロック背景 (v0.4.1〜、tooltip とは独立)
+const _cf  = 'var(--ric-code-fg)';    // コードブロック文字色 (v0.4.1〜)
 const _bl  = 'var(--ric-popup-blur)';
 const _fs  = 'var(--ric-font-size, 14px)';
 const _ps  = 'var(--ric-panel-shadow)';
@@ -1092,6 +1094,17 @@ ${_P}.ric-inline-menu .ric-button {
 .ric-md-pre__list li {
   margin: 0.2em 0;
 }
+.ric-md-pre__ol {
+  margin: 0.5em 0; padding-left: 1.5em;
+}
+.ric-md-pre__ol li {
+  margin: 0.2em 0;
+}
+.ric-md-pre__img {
+  max-width: 100%;
+  height: auto;
+  border-radius: ${_r};
+}
 .ric-md-pre__quote {
   margin: 0.5em 0; padding: 0.3em 0.8em;
   border-left: 3px solid ${_ac};
@@ -1099,7 +1112,7 @@ ${_P}.ric-inline-menu .ric-button {
 }
 .ric-md-pre__fence {
   margin: 0.5em 0; padding: ${_gm};
-  background: ${_tb}; color: ${_tf};
+  background: ${_cb}; color: ${_cf};
   border: 1px solid color-mix(in srgb, ${_fg} 6%, transparent);
   border-radius: ${_r};
   overflow-x: auto;
@@ -1148,8 +1161,8 @@ ${_P}.ric-inline-menu .ric-button {
 .ric-code-pre {
   margin: 0;
   padding: ${_gm};
-  background: ${_tb};
-  color: ${_tf};
+  background: ${_cb};
+  color: ${_cf};
   border: 1px solid color-mix(in srgb, ${_fg} 6%, transparent);
   border-radius: var(--ric-radius, 8px);
   overflow-x: auto;
@@ -1159,7 +1172,7 @@ ${_P}.ric-inline-menu .ric-button {
   white-space: pre;
 }
 .ric-code-pre:hover {
-  scrollbar-color: color-mix(in srgb, ${_tf} 40%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, ${_cf} 40%, transparent) transparent;
 }
 .ric-code-pre > code {
   display: block;

@@ -578,6 +578,13 @@ s.dd   = create_ui_popup();
 | `--ric-color-border` | #e5e7eb | #2a2f3a | #c5ddd8 | rgba青0.65 | rgba青0.35 |
 | `--ric-color-accent` | #2563eb | #60a5fa | #007f6d | #38bdf8 | #0284c7 |
 | `--ric-color-accent-fg` | #ffffff | #0f1115 | #ffffff | #04070f | #ffffff |
+| `--ric-code-bg` (v0.4.1〜) | #f6f8fa | #374151 | #e6f2ef | rgba(4,7,15,0.92) | rgba(255,255,255,0.55) |
+| `--ric-code-fg` (v0.4.1〜) | #24292f | #f9fafb | #0d2b24 | #38bdf8 | #1a2c3c |
+
+`--ric-code-bg` / `--ric-code-fg` は `ui_md_pre` のフェンス（```` ``` ````/`~~~`）と
+`ui_code_pre` が参照するコードブロック配色。`--ric-tooltip-bg/fg` とは独立したトークン
+（v0.4.1 より前は tooltip 変数を流用しており、light 系テーマでも常にダーク表示になる
+バグがあった）。
 
 teal/cyber/aqua は `--ric-color-bg` にグラデーションを使用。
 input/select/button は `--ric-color-control` を使い単色（グラデーション回避）。
@@ -958,7 +965,7 @@ ui_button({ ctx: [ui_icon(ICONS.save), '保存'] })    // ボタン内 (gap で�
   **アイコンピッカーの Lucide タブは内部でこの変換器を通す**ので、ピッカー出力は
   常に path 化済み。circle/rect を含むアイコンも**ピッカー/変換器を通せば手作業ゼロ**。
   (= 生 SVG を手でコピーして円弧 path を自前で書く、は不要。)
-- **viewBox は `0 0 24 24` 系で統一**。同梱 35 個も Lucide も全て 24 系。`v` で
+- **viewBox は `0 0 24 24` 系で統一**。同梱 36 個も Lucide も全て 24 系。`v` で
   別 viewBox も指定できるが、**24 以外を混ぜると stroke-width の見た目がズレる**
   (線の太さは viewBox 座標系に対する相対値のため)。自前 SVG を `svg_to_descriptor`
   で取り込む場合も 24 系に揃えるのが安全。
@@ -979,7 +986,7 @@ AI エージェントは、GUI を開かず以下で完結できる(「アイコ
   npx ricdom-icon --names                      # 同梱の名前一覧
   ```
   ログ/警告は stderr、descriptor は stdout(`>> icons.js` や `$(...)` で受けられる)。
-- **同梱 35 個**を読むだけなら `docs/icons/icons.json`(`{ _meta, icons }`)を直接読む。
+- **同梱 36 個**を読むだけなら `docs/icons/icons.json`(`{ _meta, icons }`)を直接読む。
 - **任意の SVG → descriptor** は `require('.../docs/icons/svg_to_descriptor')`(UMD、Node 可)。
 
 > ⚠️ **AI エージェントへ**: descriptor の `p`(path)を**記憶から手書きしないこと**。
@@ -1012,6 +1019,7 @@ Markdown テキストを VDOM ノードに変換する簡易パーサー。外�
 |-------|------|------|
 | `ctx` | `string[]` | Markdown テキスト（複数渡すと連結） |
 | `transform_text` | `(str) => (vnode\|string)[] \| string` | 任意（v0.3.38〜）。プロセ（通常テキスト）のテキストノードにだけ適用し、戻り値で置換する |
+| `transform_image_src` | `(src, alt) => string` | 任意（v0.4.1〜）。`![alt](src)` の img 生成前に src を差し替える |
 
 ##### transform_text (v0.3.38〜)
 
@@ -1040,6 +1048,24 @@ FACT:
   （無限ループ対策、1 パスのみ消費）。
 - 未指定時は従来の挙動と完全に一致する（挙動を変えない後方互換オプション）。
 
+##### transform_image_src (v0.4.1〜)
+
+`![alt](src)` の img 生成前に src を差し替えたいときのフック。用途例: 相対パスを
+Electron のカスタムプロトコルへ解決する。
+
+```javascript
+ui_md_pre({
+  ctx: ['![説明](photo.png)'],
+  transform_image_src: (src, alt) => `app://assets/${src}`,
+})
+```
+
+FACT:
+
+- string 以外を返した場合、または例外を投げた場合は `console.error` を出し、元の
+  src のまま表示する（NOOP フォールバック、`transform_text` と同じ流儀）。
+- `transform_text` と同様に rest スプレッドから分離され、DOM 属性としては漏れない。
+
 ##### 対応構文
 
 | 記法 | 出力 | 備考 |
@@ -1048,21 +1074,39 @@ FACT:
 | `**太字**` | `<strong>` | インライン |
 | `*斜体*` | `<em>` | インライン |
 | `` `code` `` | `<code>` | インラインコード |
-| ` ```lang ... ``` ` | `<pre><code>` | hljs があれば自動シンタックスハイライト |
+| ` ```lang ... ``` ` / `~~~lang ... ~~~` | `<pre><code>` | hljs があれば自動シンタックスハイライト。開始と同じ文字種（``` / ~~~）で閉じる（v0.4.1〜 チルダ対応） |
 | `- item` | `<ul><li>` | ネスト非対応 |
+| `1. item` | `<ol><li>` | ネスト非対応。1 始まりでなければ `start` 属性を付与（v0.4.1〜） |
 | `> quote` | `<blockquote>` | 単一行 |
-| `[text](url)` | `<a>` | `target="_blank" rel="noopener"` 自動付与 |
+| `[text](url)` | `<a>` | `target="_blank" rel="noopener"` 自動付与。`javascript:` / `data:` / `vbscript:` は href を出力しない（v0.4.1〜、下記「危険スキームの href ブロック」参照） |
+| `![alt](src)` | `<img class="ric-md-pre__img">` | `alt` は空文字許容。`transform_image_src` で src を差し替え可能（v0.4.1〜） |
 | `\| a \| b \|` | `<table>` | ヘッダ + `\|---:\|`/`:---\|` でアライメント |
 | `---` | `<hr>` | 単独行 |
 | 空行 | 段落区切り |  |
 
+##### 危険スキームの href ブロック (v0.4.1〜)
+
+`[text](url)` の `url` が `javascript:` / `data:` / `vbscript:` のいずれかで始まる
+場合、`<a>` は `href` / `target` / `rel` を持たずテキストのみで出力される（class は
+`ric-md-pre__link` のまま）。
+
+FACT:
+
+- 判定は大文字小文字を区別せず、制御文字（改行・タブ等の混入回避策）を除去して
+  `trim().toLowerCase()` した上で前方一致で行う。
+- **whitelist ではない**。`http:` / `https:` / `mailto:` / 相対パス / `app://` の
+  ようなカスタムプロトコルはすべて従来どおり素通しする（Electron consumer が
+  カスタムプロトコルを正当利用するケースを妨げないため）。
+- `console.warn` は出さない（href が付かない見た目で気づける）。
+- `![alt](src)` の `src` にはこの検査は適用されない（次節「サニタイズ」参照）。
+
 ##### 非対応
 
-`![img]()` 画像、`> ` 連続引用のネスト、`- ` リストのネスト、`~~取消線~~`、HTML タグ直書き、参照リンク `[text][id]`、checkbox リスト `- [ ]`。
+`> ` 連続引用のネスト、`- ` / `1. ` リストのネスト、番号の飛び（`1. 3. 5.` を連番として尊重しない、常に連続番号として描画）、`~~取消線~~`、HTML タグ直書き、参照リンク `[text][id]`、checkbox リスト `- [ ]`。
 
 ##### サニタイズ
 
-ユーザー入力を表示する場合は呼び出し側で sanitize すること。`ui_md_pre` は HTML 直書きを `<` `>` のままパススルーしないが、`href` / `src` のスキーム検査は行わない（`javascript:` など）。信頼できないソースを表示する用途では追加のフィルタを推奨。
+ユーザー入力を表示する場合は呼び出し側で sanitize すること。`ui_md_pre` は HTML 直書きを `<` `>` のままパススルーしない。`[text](url)` の `href` は危険スキーム（`javascript:` / `data:` / `vbscript:`）を上記の通りブロックするが、**`![alt](src)` の `src` にはスキーム検査を行わない**。信頼できないソースを表示する用途では、`transform_image_src` で許可リストを実装するか、追加のフィルタを推奨。
 
 ### Popup
 
@@ -1743,6 +1787,13 @@ RicUI が提供する CSS 変数。自作コンポーネントやカスタムス
 |---|---|
 | `--ric-tooltip-bg` | ツールチップ背景 |
 | `--ric-tooltip-fg` | ツールチップ前景 |
+
+#### コードブロック専用 (v0.4.1〜)
+
+| 変数名 | 用途 |
+|---|---|
+| `--ric-code-bg` | `ui_md_pre` フェンス / `ui_code_pre` の背景（`--ric-tooltip-bg` とは独立） |
+| `--ric-code-fg` | `ui_md_pre` フェンス / `ui_code_pre` の前景（`--ric-tooltip-fg` とは独立） |
 
 自作コンポーネントは `background: var(--ric-color-bg)` のように直接参照すれば、テーマ切替（`s.page.theme = 'dark'` 等）で自動追従する。`create_theme` / `export_theme` で任意キーを上書きできる。
 
