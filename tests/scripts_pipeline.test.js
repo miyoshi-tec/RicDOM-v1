@@ -134,6 +134,24 @@ describe('build_icons.js', () => {
 
     assert.deepEqual(after, before, 'build_icons 再実行で icons.json の内容が変わった (drift の疑い)');
   });
+
+  // contrast アイコン (v0.4.1〜、Raccoon/Brownies/Rancha の 3 consumer がテーマ切替 UI で
+  // 個別に手書きしていたのを解消。ricdom-icon CLI で Lucide から取得・path 化して追加した)
+  test('contrast アイコンが存在し、descriptor が valid', () => {
+    const icons_path = path.join(ROOT, 'docs', 'icons', 'icons.json');
+    const data = JSON.parse(fs.readFileSync(icons_path, 'utf8'));
+
+    assert.ok(data.icons.contrast, 'contrast が icons.json に存在しない');
+    const def = data.icons.contrast;
+    const ps = Array.isArray(def.p) ? def.p : [def.p];
+    assert.ok(ps.length > 0, 'p が空');
+    for (const d of ps) {
+      assert.equal(typeof d, 'string');
+      assert.notEqual(d.trim(), '');
+    }
+    // リング（circle）+ 右半分の扇形（半円弧を含む path）という要望の幾何を満たすこと
+    assert.equal(ps.length, 2, 'circle 相当の path + 右半分の path の 2 本構成のはず');
+  });
 });
 
 // =====================================================================

@@ -32,6 +32,239 @@ describe('blocks', () => {
   test('h4', () => { const n = c('#### T')[0]; assert.equal(n.tag, 'h4'); assert.equal(n.class, 'ric-md-pre__h3'); });
 });
 
+// ─────────────────────────────────────────────────────────────
+// A. 画像記法 ![alt](src) + transform_image_src (v0.4.1〜、RaccoonMemo consumer 報告)
+// ─────────────────────────────────────────────────────────────
+describe('画像記法 ![alt](src) (v0.4.1〜)', () => {
+
+  test('基本形: img ノードが生成される', () => {
+    const p = c('![説明](img.png)')[0];
+    assert.equal(p.tag, 'p');
+    const img = p.ctx.find((n) => typeof n === 'object' && n.tag === 'img');
+    assert.ok(img, 'img ノードが存在する');
+    assert.equal(img.class, 'ric-md-pre__img');
+    assert.equal(img.src, 'img.png');
+    assert.equal(img.alt, '説明');
+  });
+
+  test('alt 空でも壊れない', () => {
+    const p = c('![](img.png)')[0];
+    const img = p.ctx.find((n) => typeof n === 'object' && n.tag === 'img');
+    assert.ok(img, 'img ノードが存在する');
+    assert.equal(img.alt, '');
+    assert.equal(img.src, 'img.png');
+  });
+
+  test('transform_image_src が src を差し替える', () => {
+    const node = ui_md_pre({
+      ctx: ['![a](rel/x.png)'],
+      transform_image_src: (src) => `app://assets/${src}`,
+    });
+    const p = node.ctx[0];
+    const img = p.ctx.find((n) => typeof n === 'object' && n.tag === 'img');
+    assert.equal(img.src, 'app://assets/rel/x.png');
+  });
+
+  test('transform_image_src には (src, alt) の 2 引数が渡る', () => {
+    let received;
+    ui_md_pre({
+      ctx: ['![alt-text](x.png)'],
+      transform_image_src: (src, alt) => { received = [src, alt]; return src; },
+    });
+    assert.deepEqual(received, ['x.png', 'alt-text']);
+  });
+
+  test('transform_image_src が string 以外を返したら console.error + 元の src (NOOP)', () => {
+    const errors = [];
+    const orig_error = console.error;
+    console.error = (...args) => { errors.push(args.join(' ')); };
+    let img;
+    try {
+      const node = ui_md_pre({
+        ctx: ['![a](x.png)'],
+        transform_image_src: () => undefined,
+      });
+      img = node.ctx[0].ctx.find((n) => typeof n === 'object' && n.tag === 'img');
+    } finally {
+      console.error = orig_error;
+    }
+    assert.equal(errors.length, 1, 'console.error が 1 回呼ばれる');
+    assert.match(errors[0], /transform_image_src/);
+    assert.equal(img.src, 'x.png', '元の src のまま');
+  });
+
+  test('transform_image_src が例外を投げたら console.error + 元の src (NOOP)', () => {
+    const errors = [];
+    const orig_error = console.error;
+    console.error = (...args) => { errors.push(args.join(' ')); };
+    let img;
+    try {
+      const node = ui_md_pre({
+        ctx: ['![a](x.png)'],
+        transform_image_src: () => { throw new Error('boom'); },
+      });
+      img = node.ctx[0].ctx.find((n) => typeof n === 'object' && n.tag === 'img');
+    } finally {
+      console.error = orig_error;
+    }
+    assert.equal(errors.length, 1, 'console.error が 1 回呼ばれる');
+    assert.match(errors[0], /transform_image_src/);
+    assert.equal(img.src, 'x.png', '元の src のまま');
+  });
+
+  test('インラインコード内の ![...](...) は画像に変換されない（リテラルのまま）', () => {
+    const p = c('`![a](x.png)` テキスト')[0];
+    const code_node = p.ctx.find((n) => typeof n === 'object' && n.tag === 'code');
+    assert.ok(code_node, 'インラインコードノードが存在する');
+    assert.equal(code_node.ctx[0], '![a](x.png)');
+    assert.ok(!p.ctx.some((n) => typeof n === 'object' && n.tag === 'img'), 'img ノードが生成されていない');
+  });
+
+  test('コードブロック内の ![...](...) は画像に変換されない', () => {
+    const pre = c('```\n![a](x.png)\n```')[0];
+    assert.equal(pre.tag, 'pre');
+    assert.equal(pre.ctx[0].ctx[0], '![a](x.png)');
+  });
+
+  test('transform_image_src は rest スプレッドを介して DOM 属性として漏れない', () => {
+    const node = ui_md_pre({ ctx: ['![a](x.png)'], transform_image_src: (s) => s });
+    assert.equal('transform_image_src' in node, false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// B. 順序ありリスト 1. item (v0.4.1〜)
+// ─────────────────────────────────────────────────────────────
+describe('順序ありリスト (v0.4.1〜)', () => {
+
+  test('基本形: ol タグ + li 3 つ', () => {
+    const ol = c('1. A\n2. B\n3. C')[0];
+    assert.equal(ol.tag, 'ol');
+    assert.equal(ol.class, 'ric-md-pre__ol');
+    assert.equal(ol.ctx.length, 3);
+    assert.equal(ol.ctx[0].tag, 'li');
+    assert.equal(ol.ctx[0].ctx[0], 'A');
+  });
+
+  test('1 始まりでない場合は start 属性が付く', () => {
+    const ol = c('3. A\n4. B')[0];
+    assert.equal(ol.start, 3);
+  });
+
+  test('1 始まりの場合は start が付かない', () => {
+    const ol = c('1. A\n2. B')[0];
+    assert.equal(ol.start, undefined);
+  });
+
+  test('ul (- item) と ol (1. item) が混在しても別ブロックになる', () => {
+    const nodes = c('- A\n- B\n\n1. C\n2. D');
+    assert.equal(nodes[0].tag, 'ul');
+    assert.equal(nodes[1].tag, 'ol');
+  });
+
+  test('li 内でインライン記法（太字等）が使える', () => {
+    const ol = c('1. **bold** item')[0];
+    const strong = ol.ctx[0].ctx.find((n) => typeof n === 'object' && n.tag === 'strong');
+    assert.ok(strong, 'li 内に strong ノードがある');
+  });
+
+  test('段落は ol 開始行の手前で終端する', () => {
+    const nodes = c('text1\n1. item\ntext2');
+    // "text2" は次の ol item として読まれるので、p は 1 個、ol は item 2 つ
+    assert.equal(nodes[0].tag, 'p');
+    assert.equal(nodes[1].tag, 'ol');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// C. チルダフェンス ~~~ (v0.4.1〜)
+// ─────────────────────────────────────────────────────────────
+describe('チルダフェンス ~~~ (v0.4.1〜)', () => {
+
+  test('~~~ で開始して ~~~ で閉じる', () => {
+    const pre = c('~~~\ncode here\n~~~')[0];
+    assert.equal(pre.tag, 'pre');
+    assert.equal(pre.class, 'ric-md-pre__fence');
+    assert.equal(pre.ctx[0].ctx[0], 'code here');
+  });
+
+  test('``` (backtick) で開始した場合は ~~~ では閉じない（``` まで読み込む）', () => {
+    const pre = c('```\n~~~\nstill code\n```')[0];
+    assert.equal(pre.tag, 'pre');
+    assert.equal(pre.ctx[0].ctx[0], '~~~\nstill code');
+  });
+
+  test('~~~ で開始した場合は ``` では閉じない（~~~ まで読み込む）', () => {
+    const pre = c('~~~\n```\nstill code\n~~~')[0];
+    assert.equal(pre.tag, 'pre');
+    assert.equal(pre.ctx[0].ctx[0], '```\nstill code');
+  });
+
+  test('info string（言語名）は従来どおり扱える', () => {
+    // hljs / window 無しの Node 環境ではプレーンテキストにフォールバックするが、
+    // フェンス自体は正しく認識される（lang による分岐で落ちない）ことを確認する。
+    const pre = c('~~~js\nconst x = 1;\n~~~')[0];
+    assert.equal(pre.tag, 'pre');
+    assert.equal(pre.ctx[0].ctx[0], 'const x = 1;');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// D. 危険スキームの href ブロック (v0.4.1〜)
+// ─────────────────────────────────────────────────────────────
+describe('危険スキームの href ブロック (v0.4.1〜)', () => {
+
+  const link_node = (md) => c(md)[0].ctx.find((n) => typeof n === 'object' && n.tag === 'a');
+
+  test('javascript: は href を出力しない（テキストのみの <a>）', () => {
+    const a = link_node('[click](javascript:alert(1))');
+    assert.ok(a, 'a ノードは存在する');
+    assert.equal(a.href, undefined);
+    assert.equal(a.target, undefined);
+    assert.equal(a.rel, undefined);
+    assert.equal(a.class, 'ric-md-pre__link');
+    assert.equal(a.ctx[0], 'click');
+  });
+
+  test('data: は href を出力しない', () => {
+    const a = link_node('[x](data:text/html,evil)');
+    assert.equal(a.href, undefined);
+  });
+
+  test('vbscript: は href を出力しない', () => {
+    const a = link_node('[x](vbscript:evil)');
+    assert.equal(a.href, undefined);
+  });
+
+  test('大文字混じり JavaScript: も href を出力しない', () => {
+    const a = link_node('[x](JavaScript:alert(1))');
+    assert.equal(a.href, undefined);
+  });
+
+  test('先頭空白付き危険スキームも href を出力しない', () => {
+    const a = link_node('[x]( javascript:alert(1))');
+    assert.equal(a.href, undefined);
+  });
+
+  test('app:// のようなカスタムプロトコルは素通しする（whitelist にしない）', () => {
+    const a = link_node('[x](app://open/foo)');
+    assert.equal(a.href, 'app://open/foo');
+    assert.equal(a.target, '_blank');
+    assert.equal(a.rel, 'noopener');
+  });
+
+  test('相対パスは素通しする', () => {
+    const a = link_node('[x](./page.html)');
+    assert.equal(a.href, './page.html');
+  });
+
+  test('http(s) / mailto は従来どおり素通しする', () => {
+    assert.equal(link_node('[x](https://example.com)').href, 'https://example.com');
+    assert.equal(link_node('[x](http://example.com)').href, 'http://example.com');
+    assert.equal(link_node('[x](mailto:a@example.com)').href, 'mailto:a@example.com');
+  });
+});
+
 // 無限ループ回帰テスト：上のブロック分岐で拾われない行が段落に降りてきたときに
 // 無限ループせず段落として消費されることを確認する。
 // 過去に `#hello` / `#` / `####### ` / `|foo` などで _parse_blocks が無限ループした。

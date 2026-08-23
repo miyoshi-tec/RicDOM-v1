@@ -5,7 +5,7 @@ Electron・社内ツール・IoT デバイス UI 向け。JSON で書く 10KB �
 | レイヤー | サイズ | 役割 |
 |---------|------:|------|
 | **RicDOM** | 10KB | コア — JSON → DOM 差分更新 + Proxy リアクティビティ |
-| **RicUI** | 68KB | 部品集 — CSS 変数テーマ + ボタン・ポップアップ・スプリッター + 調整パネル |
+| **RicUI** | 70KB | 部品集 — CSS 変数テーマ + ボタン・ポップアップ・スプリッター + 調整パネル |
 
 Virtual DOM を持たず、JSON オブジェクトの差分から実 DOM を直接パッチします。
 Electron やブラウザで、リアルタイムなダッシュボード・パラメータ調整 UI・データ可視化ツールを素早く構築できます。
@@ -22,9 +22,9 @@ Electron やブラウザで、リアルタイムなダッシュボード・パ�
 - **JSON 記述** — `{ tag: 'div', ctx: [...] }` の plain object で UI を定義
 - **Virtual DOM なし** — JSON 差分 → 実 DOM を直接パッチ（input フォーカスや IME を壊さない）
 - **Proxy 自動追跡** — state への代入で自動再描画（トップレベル＋一段目まで）
-- **極小バンドル** — RicDOM コア 10KB / RicUI 65KB（minified、個別読み込み）
+- **極小バンドル** — RicDOM コア 10KB / RicUI 70KB（minified、個別読み込み）
 - **学習コスト最小** — `create_RicDOM(target, { render(s){...} })` の 2 引数だけ覚えればよい
-- **アイコン** — 同梱 35 個 + Lucide を[アイコンピッカー](docs/icon_playground.html)または
+- **アイコン** — 同梱 36 個 + Lucide を[アイコンピッカー](docs/icon_playground.html)または
   `npx ricdom-icon` で取得（path の手書きは非推奨）
 
 ## 設計思想 — 心・技・体
@@ -83,8 +83,8 @@ npm パッケージとしては公開していません。
 |---------|------:|------|
 | `RicDOM.min.js`    | 10KB | コア（必須） |
 | `RicDOM.lz.min.js` |  7KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
-| `RicUI.min.js`     | 68KB | UI コンポーネント集 + パラメータ調整パネル |
-| `RicUI.lz.min.js`  | 39KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
+| `RicUI.min.js`     | 70KB | UI コンポーネント集 + パラメータ調整パネル |
+| `RicUI.lz.min.js`  | 40KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
 
 #### LZ 圧縮版 (`*.lz.min.js`) の使い分け
 
@@ -168,7 +168,7 @@ global 副作用は decompress 後の `eval` で発火する。consumer の bund
 
 `ui_icon` の descriptor を**名前 → stdout** で引く CLI。アイコンピッカー
 (`docs/icon_playground.html`) のヘッドレス版で、GUI を開けない CLI / CI / AI
-エージェント向け。同梱 35 個はオフライン即返し、Lucide は取得して `svg_to_descriptor`
+エージェント向け。同梱 36 個はオフライン即返し、Lucide は取得して `svg_to_descriptor`
 で path 化する(circle/rect も自動変換 → 手書きで壊す事故を防ぐ)。
 
 > 注: npm 未公開のため、`npx` はリポジトリ内または

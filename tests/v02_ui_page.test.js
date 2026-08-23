@@ -108,6 +108,55 @@ describe('make_css_vars: theme', () => {
   });
 });
 
+// --ric-code-bg / --ric-code-fg (v0.4.1〜)
+// 従来 ui_md_pre のフェンス / ui_code_pre が --ric-tooltip-bg/fg を流用していたため、
+// light 系テーマでも常にダーク表示になるバグがあった。専用トークンを全 5 テーマに
+// 追加し、light 系は明色、dark 系は暗色になるようにした修正の回帰テスト。
+describe('make_css_vars: code トークン (v0.4.1〜)', () => {
+
+  test('全 5 テーマで --ric-code-bg / --ric-code-fg が定義される', () => {
+    for (const theme of ['light', 'dark', 'teal', 'cyber', 'aqua']) {
+      const vars = make_css_vars({ theme });
+      assert.match(vars, /--ric-code-bg: /, `${theme}: --ric-code-bg が無い`);
+      assert.match(vars, /--ric-code-fg: /, `${theme}: --ric-code-fg が無い`);
+    }
+  });
+
+  test('light 系テーマ（light/teal/aqua）は明るい code 背景になる（旧バグ回帰防止）', () => {
+    // 旧実装は --ric-tooltip-bg を流用しており、light テーマでも #1f2937 のような
+    // 暗い背景になっていた。新トークンは light 系では明るい背景であること。
+    for (const theme of ['light', 'teal', 'aqua']) {
+      const vars = make_css_vars({ theme });
+      const m = vars.match(/--ric-code-bg: ([^;]+)/);
+      assert.ok(m, `${theme}: --ric-code-bg が見つからない`);
+      assert.notEqual(m[1].trim(), 'var(--ric-tooltip-bg)', `${theme}: tooltip 流用のままになっている`);
+    }
+  });
+
+  test('dark 系テーマ（dark/cyber）は暗い code 背景になる', () => {
+    const dark_vars  = make_css_vars({ theme: 'dark' });
+    const cyber_vars = make_css_vars({ theme: 'cyber' });
+    assert.match(dark_vars, /--ric-code-bg: #374151/);
+    assert.match(cyber_vars, /--ric-code-bg: rgba\(4,7,15,0\.92\)/);
+  });
+
+  test('ric-md-pre__fence / ric-code-pre の CSS が --ric-code-bg/fg を参照する（--ric-tooltip-bg/fg ではない）', () => {
+    const { CSS_TEMPLATES } = require('../ric_ui/css_templates');
+    const md_pre_css   = CSS_TEMPLATES['ric-md-pre']();
+    const code_pre_css = CSS_TEMPLATES['ric-code-pre']();
+
+    assert.match(md_pre_css, /\.ric-md-pre__fence\s*\{[^}]*var\(--ric-code-bg\)/);
+    assert.match(md_pre_css, /\.ric-md-pre__fence\s*\{[^}]*var\(--ric-code-fg\)/);
+    assert.match(code_pre_css, /\.ric-code-pre\s*\{[^}]*var\(--ric-code-bg\)/);
+    assert.match(code_pre_css, /\.ric-code-pre\s*\{[^}]*var\(--ric-code-fg\)/);
+
+    // tooltip 側の参照は変えない（回帰防止）
+    const tooltip_css = CSS_TEMPLATES['ric-tooltip']();
+    assert.match(tooltip_css, /var\(--ric-tooltip-bg\)/);
+    assert.match(tooltip_css, /var\(--ric-tooltip-fg\)/);
+  });
+});
+
 describe('make_css_vars: density', () => {
 
   test('density=comfortable のとき gap が 6px', () => {
