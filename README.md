@@ -84,7 +84,7 @@ npm パッケージとしては公開していません。
 | `RicDOM.min.js`    | 10KB | コア（必須） |
 | `RicDOM.lz.min.js` |  7KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
 | `RicUI.min.js`     | 70KB | UI コンポーネント集 + パラメータ調整パネル |
-| `RicUI.lz.min.js`  | 40KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
+| `RicUI.lz.min.js`  | 41KB | 同上の LZSS 自己展開版 (v0.3.18〜、下記参照) |
 
 #### LZ 圧縮版 (`*.lz.min.js`) の使い分け
 

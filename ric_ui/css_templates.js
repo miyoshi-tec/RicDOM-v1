@@ -36,11 +36,14 @@ const _cf  = 'var(--ric-code-fg)';    // コードブロック文字色 (v0.4.1�
 const _bl  = 'var(--ric-popup-blur)';
 const _fs  = 'var(--ric-font-size, 14px)';
 const _ps  = 'var(--ric-panel-shadow)';
+const _sbt  = 'var(--ric-scrollbar-thumb)';        // スクロールバーつまみ色 (v0.4.2〜)
+const _sbth = 'var(--ric-scrollbar-thumb-hover)';  // スクロールバーつまみ hover 色 (v0.4.2〜)
 
 // 複合パターン
 const _b1  = `1px solid ${_bd}`;       // border: 1px solid var(--ric-color-border)
 const _da  = `${_dur} ${_eas}`;         // var(--ric-duration) var(--ric-easing)
-const _P   = '.ric-page ';             // セレクタプレフィックス（末尾スペース含む）
+const _P   = '.ric-page ';             // セレクタプレフィックス（末尾スペース含む、子孫用）
+const _Pn  = '.ric-page';              // セレクタプレフィックス（末尾スペースなし、疑似要素直結・自身用）
 
 const CSS_TEMPLATES = {
 
@@ -57,11 +60,25 @@ ${_P}{
 }
 ${_P}*, ${_P}*::before, ${_P}*::after {
   box-sizing: inherit;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
 }
-${_P}*:hover {
-  scrollbar-color: color-mix(in srgb, ${_ac} 50%, transparent) color-mix(in srgb, ${_fg} 6%, transparent);
+${_P}, ${_P}* {
+  scrollbar-width: thin;
+  scrollbar-color: ${_sbt} transparent;
+}
+${_Pn}::-webkit-scrollbar, ${_P}*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+${_Pn}::-webkit-scrollbar-track, ${_P}*::-webkit-scrollbar-track,
+${_Pn}::-webkit-scrollbar-corner, ${_P}*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+${_Pn}::-webkit-scrollbar-thumb, ${_P}*::-webkit-scrollbar-thumb {
+  background: ${_sbt};
+  border-radius: 4px;
+}
+${_Pn}::-webkit-scrollbar-thumb:hover, ${_P}*::-webkit-scrollbar-thumb:hover {
+  background: ${_sbth};
 }`,
 
   'ric-col': () => `
@@ -379,12 +396,12 @@ ${_P}.ric-input::placeholder {
   'ric-scroll-pane': () => `
 ${_P}.ric-scroll-pane {
   min-height: 0;
-  scrollbar-color: ${_fm} transparent;
+  scrollbar-color: ${_sbt} transparent;
   scrollbar-width: thin;
 }
 ${_P}.ric-scroll-pane::-webkit-scrollbar { width: 8px; height: 8px; }
 ${_P}.ric-scroll-pane::-webkit-scrollbar-thumb {
-  background: ${_fm};
+  background: ${_sbt};
   border-radius: 4px;
 }
 ${_P}.ric-scroll-pane::-webkit-scrollbar-track { background: transparent; }`,
