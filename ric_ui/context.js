@@ -25,6 +25,9 @@ const COLOR_VARS_LIGHT = {
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 16px rgba(0,0,0,0.10)',
   '--ric-radius':           '8px',
+  // UA ネイティブ部品（スクロールバー・select・checkbox・日付ピッカー等）に
+  // ライト/ダークを伝える (v0.4.2〜)。--ric-color-bg (#f9fafb、明るい) に基づき light。
+  'color-scheme':           'light',
 };
 
 const COLOR_VARS_DARK = {
@@ -43,6 +46,8 @@ const COLOR_VARS_DARK = {
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 24px rgba(0,0,0,0.50)',
   '--ric-radius':           '8px',
+  // --ric-color-bg (#111318、暗い) に基づき dark (v0.4.2〜)。
+  'color-scheme':           'dark',
 };
 
 // ティールテーマ：ライトベースで緑系アクセント
@@ -65,6 +70,9 @@ const COLOR_VARS_TEAL = {
   // shadow / animation / overlay
   '--ric-shadow':           '0 4px 16px rgba(0,60,50,0.12)',
   '--ric-radius':           '8px',
+  // --ric-color-bg はグラデーションだが全ストップが淡い色（mint/off-white/pale
+  // yellow/pale pink）で明るい基調のため light (v0.4.2〜)。
+  'color-scheme':           'light',
 };
 
 // サイバーテーマ：ダークガラス・ネオン青緑
@@ -94,6 +102,9 @@ const COLOR_VARS_CYBER = {
   '--ric-shadow':            '0 0 20px rgba(0,200,255,0.25), inset 0 1px 0 rgba(80,200,255,0.15)',
   '--ric-duration':          '80ms',
   '--ric-easing':            'linear',
+  // --ric-color-bg は radial-gradient の各ブロブがネオン色だが、下敷きの
+  // ベース色が #04070f（ほぼ黒）で全体としては暗い基調のため dark (v0.4.2〜)。
+  'color-scheme':            'dark',
 };
 
 // アクアテーマ：水滴ガラス・やわらかブルー
@@ -121,6 +132,9 @@ const COLOR_VARS_AQUA = {
   '--ric-shadow':            '0 4px 20px rgba(20,80,140,0.12), inset 0 1px 0 rgba(255,255,255,0.60)',
   '--ric-duration':          '600ms',
   '--ric-easing':            'linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.069, 1.099 24.3%, 1.105 26%, 1.096 27.9%, 1.053 32.8%, 1.019 38.1%, 0.999 44.2%, 0.995 51.9%, 1.0 62.6%, 1.001 99.9%)',
+  // --ric-color-bg は radial-gradient の各ブロブが淡いブルーで、下敷きの
+  // ベース色が #a0d8f0（明るいスカイブルー）のため light (v0.4.2〜)。
+  'color-scheme':            'light',
 };
 
 // ──────────────────────────────────────────────
@@ -208,6 +222,14 @@ const make_css_vars = ({ theme = 'light', density = 'comfortable', font_size = '
   }
   if (!vars['--ric-color-border']) {
     vars['--ric-color-border'] = 'color-mix(in srgb, var(--ric-color-fg) 15%, transparent)';
+  }
+  // ページ全体のスクロールバートークン（未指定時に fg から自動導出、v0.4.2〜）。
+  // .ric-scroll-pane の従来色 (--ric-color-fg-muted 相当) に近い見た目になる程度の割合。
+  if (!vars['--ric-scrollbar-thumb']) {
+    vars['--ric-scrollbar-thumb'] = 'color-mix(in srgb, var(--ric-color-fg) 30%, transparent)';
+  }
+  if (!vars['--ric-scrollbar-thumb-hover']) {
+    vars['--ric-scrollbar-thumb-hover'] = 'color-mix(in srgb, var(--ric-color-fg) 50%, transparent)';
   }
   // gap-md を gap から自動導出（gap * 2）
   if (!vars['--ric-gap-md']) {
@@ -300,12 +322,16 @@ const _parse_css_text = (page_el) => {
   return result;
 };
 
+// 'color-scheme' は --ric- プレフィックスを持たない通常の CSS プロパティだが
+// (v0.4.2〜) テーマの一部として export/import 対象に含める（他の --ric-* と同様）。
+const _is_theme_key = (key) => key === 'color-scheme' || key.startsWith('--ric-');
+
 const export_theme = (page_el) => {
   const all = _parse_css_text(page_el);
   if (!all) return {};
   const result = {};
   Object.entries(all).forEach(([key, val]) => {
-    if (!key.startsWith('--ric-')) return;
+    if (!_is_theme_key(key)) return;
     if (_is_density_var(key) || _is_font_var(key)) return;
     result[key] = val;
   });
@@ -333,7 +359,7 @@ const export_settings = (page_el) => {
   const density   = {};
   const font_size = {};
   Object.entries(all).forEach(([key, val]) => {
-    if (!key.startsWith('--ric-')) return;
+    if (!_is_theme_key(key)) return;
     if (_is_font_var(key))    { font_size[key] = val; return; }
     if (_is_density_var(key)) { density[key]   = val; return; }
     theme[key] = val;

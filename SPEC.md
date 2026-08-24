@@ -580,6 +580,7 @@ s.dd   = create_ui_popup();
 | `--ric-color-accent-fg` | #ffffff | #0f1115 | #ffffff | #04070f | #ffffff |
 | `--ric-code-bg` (v0.4.1〜) | #f6f8fa | #374151 | #e6f2ef | rgba(4,7,15,0.92) | rgba(255,255,255,0.55) |
 | `--ric-code-fg` (v0.4.1〜) | #24292f | #f9fafb | #0d2b24 | #38bdf8 | #1a2c3c |
+| `color-scheme` (v0.4.2〜) | light | dark | light | dark | light |
 
 `--ric-code-bg` / `--ric-code-fg` は `ui_md_pre` のフェンス（```` ``` ````/`~~~`）と
 `ui_code_pre` が参照するコードブロック配色。`--ric-tooltip-bg/fg` とは独立したトークン
@@ -588,6 +589,54 @@ s.dd   = create_ui_popup();
 
 teal/cyber/aqua は `--ric-color-bg` にグラデーションを使用。
 input/select/button は `--ric-color-control` を使い単色（グラデーション回避）。
+
+#### color-scheme（v0.4.2〜）
+
+`make_css_vars` の出力には CSS カスタムプロパティ（`--ric-*`）に加えて、通常の CSS
+プロパティ `color-scheme` も含まれる。各テーマの `--ric-color-bg` の実際の明暗
+（light/teal/aqua は明るい、dark/cyber は暗い）に基づいて `light` / `dark` が
+割り当てられる。`create_ui_page` / `css_for` 3 点セットのどちらの経路でも、この値は
+各 `.ric-page` 要素の inline style に乗る（`:root` へは適用しない — 複数ページが
+別テーマを持っても衝突しない設計を維持するため）。
+
+`color-scheme` が乗ることで、スクロールバー・`<select>` のドロップダウン・
+checkbox/radio の既定チェックマーク・`<input type="date">` 等、テーマ変数では
+塗り分けられない **UA ネイティブ描画** がテーマに追従する（対象要素の配下のみ。
+`.ric-page` の外や `:root` には影響しない）。
+
+`create_theme(base, overrides)` はベーステーマの `color-scheme` をそのまま継承する。
+`overrides` に `'color-scheme': 'dark'` のように明示指定すれば上書きできる:
+
+```javascript
+// dark ベースだが（何らかの理由で）color-scheme だけ light 扱いにしたい場合
+const my_theme = create_theme('dark', { 'color-scheme': 'light' });
+```
+
+`export_theme` / `export_settings` は `color-scheme` も他の `--ric-*` テーマ変数と
+同様に取り出し・復元できる（`--ric-` プレフィックスの例外として扱われる）。
+
+#### スクロールバートークン（v0.4.2〜）
+
+| 変数 | 既定値（未指定時、fg から自動導出） |
+|------|------|
+| `--ric-scrollbar-thumb` | `color-mix(in srgb, var(--ric-color-fg) 30%, transparent)` |
+| `--ric-scrollbar-thumb-hover` | `color-mix(in srgb, var(--ric-color-fg) 50%, transparent)` |
+
+`ric-page` テンプレートは `.ric-page` 自身と配下全体に対し、この 2 トークンを使った
+スクロールバー既定スタイル（`::-webkit-scrollbar` 系 + Firefox の
+`scrollbar-width`/`scrollbar-color`）を注入する。track/corner は透明、thumb は角丸
+4px。`.ric-scroll-pane` も同じトークンを参照する（見た目は v0.4.1 以前と同等）。
+
+上書きはテーマオブジェクトに直接キーを含めるか、`create_theme` の overrides で行う:
+
+```javascript
+const my_theme = create_theme('dark', { '--ric-scrollbar-thumb': '#ff6b6b' });
+```
+
+> **既存 consumer への影響**: v0.4.1 以前は `.ric-page` 配下のスクロールバーは
+> 既定で透明（hover 時のみ着色）だったが、v0.4.2 からは既定で常時薄く着色された
+> 細いスクロールバーになる。見た目を変えたくない場合は上記のトークン上書きで
+> 調整できる（例: `--ric-scrollbar-thumb: transparent` で従来同様に非表示にする）。
 
 #### 密度変数
 
