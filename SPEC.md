@@ -1206,8 +1206,10 @@ s.model_dd({ label: current.name, chevron: true, ctx: MODELS.map((m) =>
 ```
 
 内部状態: `_o`(open), `_c`(closing), `_d`(dir), `_p`(pos), `_m`(measuring, v0.3.27〜), `_eb`(esc_bound, v0.3.27〜)
-メソッド: `inst.close()` — 即座に閉じる（アニメーションなし。排他制御から呼ばれる）。
-v0.3.27〜 は `safe_notify` を発火する（dialog.close() と挙動を揃え、multi-instance での portal 残留を防ぐ）。
+メソッド:
+- `inst.close()` — 即座に閉じる（アニメーションなし。排他制御から呼ばれる）。
+  v0.3.27〜 は `safe_notify` を発火する（dialog.close() と挙動を揃え、multi-instance での portal 残留を防ぐ）。
+- `inst.open_at(point)` — 座標を指定して開く（v0.4.3〜。詳細は次項）。
 
 **開き方向 (above/below) の決定 (v0.3.27〜)**:
 
@@ -1229,6 +1231,44 @@ v0.3.27〜 は **実 DOM を測る 2 段階方式**:
 
 ポップアップが開いている間だけ `document` に `keydown` を bind し、ESC で
 アニメーション付きクローズする（`create_ui_dialog` と同型）。閉じると unbind。
+
+**`open_at(point)` — 座標指定で開く公式 API (v0.4.3〜)**:
+
+```javascript
+s.menu.open_at({ x: 120, y: 340 })   // { x, y }
+s.menu.open_at(e)                     // MouseEvent（clientX/clientY/target）をそのまま渡せる
+
+// 例: 行の右クリック位置に開く
+oncontextmenu: (e) => { e.preventDefault(); s.menu.open_at(e); }
+```
+
+trigger ボタンを介さず、任意の座標に popup を開く。
+
+- `point`: `{ x, y }` または `clientX` / `clientY` を持つオブジェクト（`MouseEvent` 互換）。
+  座標は viewport 基準（`clientX`/`clientY` 系）。
+- `point.target` が `Element` ならそれを anchor にし、`_get_portal_cb(anchor)` で
+  containing block を求める。`target` が無ければ `document.body` を anchor にする。
+- `x` / `y`（または `clientX`/`clientY`）が数値でない・`point` が無い等の不正な
+  引数は `console.error` を出して何もしない（NOOP 流儀、throw しない）。
+- 動作は trigger 版と同じ 2 段階実測パイプライン: 暫定方向 `below` で仮配置
+  → `visibility:hidden` で 1 フレーム描画 → 次の `requestAnimationFrame` で本体の
+  `offsetWidth`/`offsetHeight` を実測し、方向と横位置を確定して可視化する。
+  `requestAnimationFrame` / `document` が無い環境では暫定位置のまま即表示する。
+- 縦方向: 下に収まらず、上のスペースの方が大きければ `above`
+  （`bottom = cb.bottom - y + 2`、`top` は undefined）。それ以外は `below`
+  （`top = y - cb.top + 2`）。
+- 横方向: **`right` は使わない**。`left` のみを `[8, cb 幅 − 本体幅 − 8]` の
+  範囲に clamp し、containing block からはみ出さないようにする。
+- 開いている最中（`_o && !_c`）に呼ばれたら閉じずに位置だけ更新して再 measure する。
+  閉じアニメーション中（`_c`）は無視する。
+
+⚠️ **popup 本体の inline style を DOM 直書きで変えても、次の render で VDOM 側の
+値に上書きされる（VDOM が正）。** これは RicDOM のスタイルパッチが `next_style` の
+全キーを無条件に再適用する canon どおりの挙動であり、バグではない
+（`src/ricdom.js` の style diff 参照）。トースト表示等で popup 本体まで再 render が
+届くと、直書きした値と VDOM 側の値が両立してレイアウトが崩れる（例: 直書きした
+`left` と VDOM 側の `right` が両立して伸びる）。位置を変えたいなら `open_at` を
+使うこと。
 
 #### create_ui_tooltip()
 

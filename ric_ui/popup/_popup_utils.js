@@ -15,6 +15,19 @@ const _make_popup_dir = (trigger_el, content_h) => {
     ? 'below' : 'above';
 };
 
+// ── 方向判定（座標版） ────────────────────────────────────────────
+// open_at (v0.4.3〜、座標指定で開く公式 API) 用。trigger 要素の rect が無い
+// (呼び出し元は「クリックされた座標」だけを持つ) ため、_make_popup_dir と同じ
+// 「下に content_h 収まるか。収まらなくても上より下のスペースが広ければ below
+// のまま」という考え方を、rect.top/rect.bottom の代わりに y 一点で判定する
+// （trigger の高さ 0 の点とみなす＝ y が上端でも下端でもある）。
+// 既存の _make_popup_dir は変更しない（trigger 版と座標版で別関数）。
+const _make_popup_dir_at = (y, content_h) => {
+  const space_below = window.innerHeight - y;
+  return (space_below >= content_h || space_below >= y)
+    ? 'below' : 'above';
+};
+
 // ── position:fixed スタイル (object 形式) ─────────────────────────
 // ポータル配置のため z-index:401 固定。
 // オーバーレイも z:401 だが、DOM 順でポップアップが後方に置かれるため
@@ -82,4 +95,7 @@ const _close_others = (self) => {
   _popup_registry.forEach(p => { if (p !== self) p.close(); });
 };
 
-module.exports = { _make_popup_dir, _pos_style, _get_portal_cb, _get_expand_ref, _register_popup, _close_others };
+module.exports = {
+  _make_popup_dir, _make_popup_dir_at, _pos_style, _get_portal_cb, _get_expand_ref,
+  _register_popup, _close_others,
+};

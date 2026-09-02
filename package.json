@@ -1,6 +1,6 @@
 {
   "name": "ricdom",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "JSON-based real-time control DOM library for Electron/browser",
   "license": "SEE LICENSE IN LICENSE",
   "author": "miyoshi-tec",

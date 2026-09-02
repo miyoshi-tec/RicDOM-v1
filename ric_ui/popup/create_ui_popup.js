@@ -19,6 +19,12 @@
 //   // ghost: ホバーまで枠を隠す
 //   s.cfg({ icon: '⚙', ghost: true, ctx: [...] })
 //
+// プログラム的に任意の座標へ開く（v0.4.3〜。trigger ボタンを使わないケース用）:
+//   s.menu.open_at({ x: 120, y: 340 })                 // { x, y } でも
+//   s.menu.open_at(e)                                  // MouseEvent (clientX/clientY/target) でも可
+//   例: 行の右クリック位置に開く
+//     oncontextmenu: (e) => { e.preventDefault(); s.menu.open_at(e); }
+//
 // 1インスタンス = 1トリガー。
 // 開いているときオーバーレイ＋ポップアップを _page_portal_queue に積む。
 // ui_page がレンダー時に取り出して .ric-page 末尾に展開する（ポータルパターン）。
@@ -41,13 +47,32 @@
 //   1 フレーム遅延するが、popup は元々 CSS open アニメを持つため体感はほぼ無い。
 //   rAF / document が無い環境 (SSR 等) では暫定方向のまま即表示にフォールバックする
 //   (= 旧挙動、popup が hidden のまま固まらないための保護)。
+//
+// open_at (座標指定で開く公式 API、v0.4.3〜):
+//   consumer (Trend Guard) が「行の右クリック位置に開く」ために、trigger を疑似
+//   click した後 popup 本体の DOM に body.style.left / right を直書きするハックを
+//   使っていた。RicDOM の style パッチは VDOM を正とする (= 次の render で VDOM 側の
+//   値が再適用される) ため、トースト表示等で popup 本体まで再 render が届くと
+//   直書きした left と VDOM 側の right が両立して popup が伸びるバグを踏んだ。
+//   これは RicDOM の canon どおりの挙動 (バグではない) — 欠けていたのは「座標を
+//   渡して開く公式 API」だった。open_at はこれを埋める:
+//     - 座標は viewport 基準 (clientX/clientY 系)。containing block は
+//       trigger と同じ _get_portal_cb() で求める (anchor は point.target が
+//       Element ならそれ、無ければ document.body)
+//     - trigger 版と同じ 2 段階実測パイプライン (暫定 below → rAF で実測 → 確定)
+//       を使う。横方向は right を使わず left のみで、containing block 内に
+//       収まるよう [8px, cb.width - 本体幅 - 8px] へ clamp する
+//     - 開いている最中に呼ばれたら閉じずに位置だけ更新して再 measure する
+//   ⚠️ popup 本体の inline style を DOM 直書きで変えても、次の render で VDOM 側の
+//   値に上書きされる (VDOM が正)。位置を変えたいなら open_at を使うこと。
 
 'use strict';
 
 const _portal                   = require('./_page_portal_queue');
 const { apply_theme_to_portal } = require('./_wrap_portal');
 const {
-  _make_popup_dir, _pos_style, _get_portal_cb, _get_expand_ref, _register_popup, _close_others,
+  _make_popup_dir, _make_popup_dir_at, _pos_style, _get_portal_cb, _get_expand_ref,
+  _register_popup, _close_others,
 } = require('./_popup_utils');
 const { safe_notify } = require('../_factory_helpers');
 const { ui_icon } = require('../control/ui_icon');
@@ -105,6 +130,27 @@ const create_ui_popup = () => {
       left:   expand_right ? rect.left - cb.left : undefined,
       right:  expand_right ? undefined : cb.right - rect.right,
     };
+  };
+
+  // open_at 用の位置計算 (v0.4.3〜)。trigger 版の _compute_pos と違い、
+  // 座標 (x, y) 一点から計算する。right は使わず left のみ (横方向の伸縮は
+  // clamp で吸収する。DOM 直書きハックが踏んだ「left と right の両立」を
+  // そもそも起こしようがない形にしている)。
+  // w: 実測した本体幅 (measured_w)。未計測時 (初回の暫定位置) は undefined を渡し、
+  // clamp をスキップする。
+  const _compute_pos_at = (x, y, cb, dir, w) => {
+    const pos = {
+      top:    dir === 'below' ? y - cb.top + 2 : undefined,
+      bottom: dir === 'above' ? cb.bottom - y + 2 : undefined,
+      left:   x - cb.left,
+    };
+    if (w !== undefined) {
+      const margin   = 8;
+      const cb_width = cb.right - cb.left;
+      const max_left = Math.max(margin, cb_width - w - margin);
+      pos.left = Math.min(Math.max(pos.left, margin), max_left);
+    }
+    return pos;
   };
 
   // inst(props) → VDOM
@@ -242,6 +288,66 @@ const create_ui_popup = () => {
     inst._c = false;
     inst._m = false;
     safe_notify(inst, 'create_ui_popup');
+  };
+
+  // 任意の座標に開く公式 API (v0.4.3〜)。trigger ボタンを持たないケース
+  // (右クリックメニュー等) 用。ファイル冒頭コメント「open_at」の背景を参照。
+  //
+  // point: { x, y } または { clientX, clientY, target } (MouseEvent をそのまま渡せる)。
+  //   x/y は viewport 基準 (clientX/clientY 系)。target が Element ならそれを
+  //   anchor として containing block を求め、無ければ document.body を使う。
+  // 不正な引数 (x/y を持たない等) は console.error + 何もしない (NOOP 流儀、throw しない)。
+  // 閉じアニメーション中 (_c) は無視。開いている最中 (_o && !_c) に呼ばれたら
+  // 閉じずに位置だけ更新して再 measure する (trigger onclick と共通のパイプライン)。
+  inst.open_at = (point) => {
+    if (inst._c) return; // 閉じアニメ中は無視
+
+    if (!point || typeof point !== 'object') {
+      console.error('[RicUI] create_ui_popup.open_at: point には { x, y } または ' +
+        '{ clientX, clientY } を持つオブジェクト (MouseEvent 可) を渡してください。');
+      return;
+    }
+    const x = point.x ?? point.clientX;
+    const y = point.y ?? point.clientY;
+    if (typeof x !== 'number' || typeof y !== 'number' || Number.isNaN(x) || Number.isNaN(y)) {
+      console.error('[RicUI] create_ui_popup.open_at: x/y (または clientX/clientY) が数値ではありません。');
+      return;
+    }
+
+    const has_document = typeof document !== 'undefined';
+    const anchor_el = (typeof Element !== 'undefined' && point.target instanceof Element)
+      ? point.target
+      : (has_document ? document.body : undefined);
+    const cb = anchor_el ? _get_portal_cb(anchor_el) : { top: 0, left: 0, right: 0, bottom: 0 };
+
+    _close_others(inst);
+
+    // 暫定方向は below 固定（trigger 版と違い基準要素が無いため below を既定にする）。
+    inst._d = 'below';
+    inst._p = _compute_pos_at(x, y, cb, inst._d, undefined);
+
+    // rAF + document があれば実測フェーズに入る (visibility:hidden で開く)。
+    // 無ければ暫定位置のまま即表示 (SSR 等のフォールバック = trigger 版と同じ)。
+    const can_measure = typeof requestAnimationFrame !== 'undefined' && has_document;
+    inst._m = can_measure;
+    inst._o = true;
+    safe_notify(inst, 'create_ui_popup');
+
+    if (can_measure) {
+      requestAnimationFrame(() => {
+        if (!inst._o || inst._c) { inst._m = false; return; }
+        const body = document.querySelector(`[data-ric-popup-id="${_pid}"]`);
+        if (!body) { inst._m = false; safe_notify(inst, 'create_ui_popup'); return; }
+        // 実測した本体サイズで方向を再判定し、横方向は clamp する
+        const measured_w = body.offsetWidth;
+        const measured_h = body.offsetHeight;
+        const new_dir = _make_popup_dir_at(y, measured_h);
+        inst._d = new_dir;
+        inst._p = _compute_pos_at(x, y, cb, new_dir, measured_w);
+        inst._m = false;   // 可視化
+        safe_notify(inst, 'create_ui_popup');
+      });
+    }
   };
 
   // 排他制御リストに登録（モジュールレベル）
