@@ -10,11 +10,11 @@
 <meta name="keywords" content="RicDOM, JavaScript ライブラリ, JSON UI, リアクティブ, Proxy, Electron, 軽量, ビルド不要, Virtual DOM なし, JSON DOM, declarative UI, lightweight, no-build">
 <meta name="author" content="miyoshi-tec">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://miyoshi-tec.github.io/RicDOM/">
+<link rel="canonical" href="https://miyoshi-tec.github.io/RicDOM-v1/">
 
 <!-- Open Graph (Facebook / LinkedIn / Discord 等) -->
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://miyoshi-tec.github.io/RicDOM/">
+<meta property="og:url" content="https://miyoshi-tec.github.io/RicDOM-v1/">
 <meta property="og:title" content="RicDOM — JSON で書くリアルタイムコントロール DOM">
 <meta property="og:description" content="ビルド不要・10KB・Virtual DOM 無し。JSON で UI を書けて Proxy で自動再描画。Electron / 社内ツール / パラメータ調整 UI 向け。">
 <meta property="og:site_name" content="RicDOM">
@@ -31,16 +31,16 @@
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
   "name": "RicDOM",
-  "codeRepository": "https://github.com/miyoshi-tec/RicDOM",
+  "codeRepository": "https://github.com/miyoshi-tec/RicDOM-v1",
   "programmingLanguage": "JavaScript",
   "runtimePlatform": "Browser, Electron",
-  "license": "https://github.com/miyoshi-tec/RicDOM/blob/main/LICENSE",
+  "license": "https://github.com/miyoshi-tec/RicDOM-v1/blob/main/LICENSE",
   "author": {
     "@type": "Organization",
     "name": "miyoshi-tec"
   },
   "description": "JSON ツリーで UI を宣言する軽量 DOM ライブラリ。ビルド不要、Virtual DOM 無し、Proxy 自動追跡で 10KB。Electron アプリ・社内ツール・パラメータ調整 UI 向け。",
-  "url": "https://miyoshi-tec.github.io/RicDOM/",
+  "url": "https://miyoshi-tec.github.io/RicDOM-v1/",
   "keywords": "JavaScript, JSON, UI, declarative, reactive, Proxy, lightweight, no-build, Electron"
 }
 </script>
@@ -112,6 +112,10 @@
   <header>
     <h1>RicDOM</h1>
     <p><strong>JSON で書く、お手軽 リアルタイムコントロール DOM ライブラリ</strong></p>
+    <p style="color:#b45309;">
+      <strong>保守モード</strong>: RicDOM v1 (0.x) はバグ修正と小改善のみ継続中です。
+      後継の <strong>ricdom 2</strong>（TypeScript・MIT）を準備中。リポジトリは <code>RicDOM-v1</code> に改名されました。
+    </p>
     <p>
       Electron アプリ・社内ツール・パラメータ調整 UI 向けの JavaScript ライブラリ。
       <code>{ tag: 'div', ctx: [...] }</code> 形式の JSON で UI を宣言し、
@@ -159,9 +163,9 @@ create_RicDOM('#app', {
   <section>
     <h2>関連リソース</h2>
     <ul>
-      <li><a href="https://github.com/miyoshi-tec/RicDOM">GitHub リポジトリ</a></li>
-      <li><a href="https://github.com/miyoshi-tec/RicDOM/blob/main/SPEC.md">SPEC.md (技術仕様)</a></li>
-      <li><a href="https://github.com/miyoshi-tec/RicDOM/blob/main/TUTORIAL.md">TUTORIAL.md (チュートリアル)</a></li>
+      <li><a href="https://github.com/miyoshi-tec/RicDOM-v1">GitHub リポジトリ</a></li>
+      <li><a href="https://github.com/miyoshi-tec/RicDOM-v1/blob/main/SPEC.md">SPEC.md (技術仕様)</a></li>
+      <li><a href="https://github.com/miyoshi-tec/RicDOM-v1/blob/main/TUTORIAL.md">TUTORIAL.md (チュートリアル)</a></li>
       <li><a href="lz_playground.html">LZ String Playground (圧縮ツール)</a></li>
       <li><a href="icon_playground.html">Icon Picker (アイコン選択ツール)</a></li>
     </ul>
@@ -274,6 +278,9 @@ create_RicDOM('#index_page', {
         }),
         ui_text({ variant: 'muted', ctx: ['RicDOM = コア / RicUI = UI部品 + 調整パネル'],
           style: { textAlign: 'center', fontSize: '0.9rem' },
+        }),
+        ui_text({ ctx: ['保守モード: v1 (0.x) はバグ修正・小改善のみ継続。後継 ricdom 2（TypeScript・MIT）を準備中。リポジトリは RicDOM-v1 に改名済み。'],
+          style: { textAlign: 'center', fontSize: '0.85rem', color: '#b45309' },
         }),
 
         { tag: 'div', class: 'section-gap' },
@@ -430,7 +437,7 @@ create_RicDOM('#index_page', {
               { tag: 'span', class: 'sample-desc',
                 ctx: [' — 同梱 + Lucide のアイコンを選んで ui_icon 用 JSON をコピー'] },
             ]},
-            { tag: 'a', class: 'sample-link', href: 'https://github.com/miyoshi-tec/RicDOM', ctx: [
+            { tag: 'a', class: 'sample-link', href: 'https://github.com/miyoshi-tec/RicDOM-v1', ctx: [
               { tag: 'span', class: 'sample-no', ctx: ['📦'] },
               { tag: 'span', class: 'sample-title', ctx: ['GitHub リポジトリ'] },
               { tag: 'span', class: 'sample-desc',

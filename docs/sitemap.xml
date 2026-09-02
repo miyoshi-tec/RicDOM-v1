@@ -1,139 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/lz_playground.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/lz_playground.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/icon_playground.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/icon_playground.html</loc>
     <lastmod>2026-06-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/00_hello.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/00_hello.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/01_forms.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/01_forms.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/02_controls.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/02_controls.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/03_popup.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/03_popup.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/04_accordion_dialog.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/04_accordion_dialog.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/05_toast_accordion.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/05_toast_accordion.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/06_splitter.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/06_splitter.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/07_tweak_splitter.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/07_tweak_splitter.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/08_tweak_menu.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/08_tweak_menu.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/09_json_editor.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/09_json_editor.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/10_theme_studio.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/10_theme_studio.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/11_theme_override.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/11_theme_override.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/12_md_viewer.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/12_md_viewer.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/13_controlled_dialog_splitter.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/13_controlled_dialog_splitter.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/14_collapse_box.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/14_collapse_box.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/15_ai_chat.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/15_ai_chat.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/16_svg_editor.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/16_svg_editor.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/17_multi_ricdom.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/17_multi_ricdom.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/18_key_reconciliation.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/18_key_reconciliation.html</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://miyoshi-tec.github.io/RicDOM/samples/19_css_embed.html</loc>
+    <loc>https://miyoshi-tec.github.io/RicDOM-v1/samples/19_css_embed.html</loc>
     <lastmod>2026-07-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

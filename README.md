@@ -1,5 +1,9 @@
 # RicDOM
 
+> **保守モード**: RicDOM v1 (0.x) は保守モードです（バグ修正・小改善は継続、新機能追加は後継へ）。
+> 後継の **ricdom 2**（TypeScript・MIT ライセンス・npm 配布）を準備中です。
+> リポジトリは `RicDOM-v1` に改名済みです。GitHub Pages の URL も `/RicDOM-v1/` に変更されています。
+
 Electron・社内ツール・IoT デバイス UI 向け。JSON で書く 10KB の軽量 DOM ライブラリ。
 
 | レイヤー | サイズ | 役割 |
@@ -162,7 +166,7 @@ global 副作用は decompress 後の `eval` で発火する。consumer の bund
 **ブラウザで試す** — `docs/lz_playground.html` をブラウザで開くと、貼り付け / ファイル
 読み込みで圧縮率を即座に確認できる。LZ vs gzip の比較と「この経路で LZ にする価値が
 あるか」の推奨も表示するので、インストール不要で適用判断が可能。
-公開ページ: <https://miyoshi-tec.github.io/RicDOM/lz_playground.html>
+公開ページ: <https://miyoshi-tec.github.io/RicDOM-v1/lz_playground.html>
 
 ## アイコン CLI (`ricdom-icon`)
 
