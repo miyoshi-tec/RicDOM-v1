@@ -7,7 +7,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const REPO_BASE = 'https://miyoshi-tec.github.io/RicDOM/samples/';
+const REPO_BASE = 'https://miyoshi-tec.github.io/RicDOM-v1/samples/';
 
 // ファイル名 → { title, description } のマップ
 const ENTRIES = {
@@ -37,7 +37,7 @@ const ENTRIES = {
 // 最初の render で innerHTML='' により上書きするので、JS ユーザーには見えない。
 // Googlebot の初回 HTML fetch / JS 無効環境では、ページの内容が「最低限の意味」として読める。
 const build_fallback = (file, title, desc) => {
-  const repo_url = `https://github.com/miyoshi-tec/RicDOM/blob/main/docs/samples/${file}`;
+  const repo_url = `https://github.com/miyoshi-tec/RicDOM-v1/blob/main/docs/samples/${file}`;
   return `
     <!-- ▼ 静的 SEO fallback (RicDOM の最初の render で innerHTML='' により消える) ▼ -->
     <header>
@@ -49,7 +49,7 @@ const build_fallback = (file, title, desc) => {
     <nav>
       <a href="../index.html">← RicDOM トップ</a> ·
       <a href="${repo_url}">GitHub でソースを見る</a> ·
-      <a href="https://github.com/miyoshi-tec/RicDOM">リポジトリ</a>
+      <a href="https://github.com/miyoshi-tec/RicDOM-v1">リポジトリ</a>
     </nav>
     <!-- ▲ 静的 SEO fallback はここまで ▲ -->`;
 };

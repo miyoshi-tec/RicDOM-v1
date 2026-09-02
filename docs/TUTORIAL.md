@@ -23,7 +23,7 @@ my-project/
 **`.min.js` の入手方法**:
 
 - **リポジトリを clone 済みの場合**: `docs/RicDOM.min.js` と `docs/RicUI.min.js` をプロジェクトにコピー
-- **公開ページから取りたい場合**: `https://miyoshi-tec.github.io/RicDOM/RicDOM.min.js` と `.../RicUI.min.js` を直接ダウンロード
+- **公開ページから取りたい場合**: `https://miyoshi-tec.github.io/RicDOM-v1/RicDOM.min.js` と `.../RicUI.min.js` を直接ダウンロード
 - **GitHub Pages 上で試す場合**: `<script src="RicDOM.min.js"></script>` のように同階層を参照すればそのまま読み込めます
 
 `index.html` を作成します:
