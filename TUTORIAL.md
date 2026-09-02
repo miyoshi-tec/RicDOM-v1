@@ -542,6 +542,19 @@ create_ui_xxx()  →  s に格納  →  render 内で s.xxx({ ... }) として�
 
 排他制御（popup を 1 つ開くと他が閉じる）は自動管理されます。
 
+**trigger ボタンを使わず、座標を指定して popup を開く**こともできます
+（`inst.open_at(point)`、v0.4.3〜）。右クリックメニューは次のように書けます:
+
+```javascript
+s.menu({ ctx: [...] }),   // render 内で毎回呼ぶのは通常どおり（trigger は表示されなくても OK）
+// ...
+oncontextmenu: (e) => { e.preventDefault(); s.menu.open_at(e); }
+```
+
+`point` は `{ x, y }` でも `MouseEvent`（`clientX`/`clientY`/`target`）でもかまいません。
+popup 本体の位置を DOM に直接書き込んで動かすのは避けてください — 次の render で
+VDOM 側の値に上書きされます（詳細は SPEC.md `create_ui_popup` 参照）。
+
 dialog と splitter は **controlled mode** にも対応しています。
 `open` / `collapsed` を render 時に渡すと、開閉状態を外部の state で管理できます。
 詳しくは SPEC.md の「Controlled / Uncontrolled パターン」を参照してください。
