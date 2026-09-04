@@ -455,8 +455,14 @@ A のものが残留する。key 付きなら A の DOM ごと remove されて�
 **注意**:
 
 - key の値は `===` 比較できるものなら何でも OK (string / number / Symbol)。
-- 兄弟内で **key は unique であるべき**。重複 key は後勝ち (= 最初の prev エントリだけ
-  マッチして、残りは新規扱い) になる。React 同様、warn は出さないが意図しない再生成が起きる。
+- 兄弟内で **key は unique であるべき**。重複した key は unkeyed 扱いに落ちる (v0.4.5〜):
+  各 key の最初の 1 個だけが keyed map でマッチし、2 個目以降 (同じ pass で既出の key)
+  は `key` 無しの兄弟と同じ position-based fallback (= prev 側の同 tag を先頭から順に
+  消費) で吸収される。DOM ノード自体は再利用されるため子要素が増殖することはないが、
+  どの DOM がどの論理エンティティに対応するかは保証されない (= 並べ替え時に隣接
+  エンティティの input 状態が混ざりうる)。なお **新規 key** (prev に存在せず、その
+  pass でも初出の key) は重複扱いにはならず、従来どおり新規生成される (= 同 tag の
+  unkeyed 要素の DOM を奪うことはない)。React 同様、warn は出さない。
 - VDOM 上の `key` と `create_ui_collapse_box({ key })` の `key` パラメータは **別物**。
   前者はリスト reconciliation 用、後者は collapse_box 内部の per-instance state map 用。
 
