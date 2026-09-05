@@ -225,3 +225,156 @@ describe('key 属性: 論理エンティティと DOM ノードの対応付け',
     assert.equal(after[1], li_A, 'A の DOM が末尾に移動');
   });
 });
+
+// 重複 key の回帰テスト (v0.4.5)
+//
+// 兄弟内で key が重複すると、旧実装では render のたびに子要素が増殖した
+// (5 → 7 → 9 → 11 → 13...)。原因は patch_children_by_key() の 2 か所:
+//   - prev 側: keyed map への Map.set() が重複 key を上書きし、上書きされた
+//     エントリの DOM がどこからも参照されなくなって削除パスから漏れる (リーク)
+//   - next 側: 最初の同 key が map のエントリを消費すると、2 個目以降は
+//     get() が外れて毎回新規生成される
+// 修正: 重複 key を「2 個目以降は unkeyed 扱い」に落とし、位置ベースの
+// フォールバック (先頭から tag 一致で消費) で吸収する。
+describe('key 属性: 兄弟内で重複した場合 (v0.4.5 回帰テスト)', () => {
+
+  beforeEach(setup_jsdom);
+
+  test('重複 key を含むリストを複数回 render しても子要素数が増殖しない', async () => {
+    const { create_RicDOM } = require('../src/ricdom');
+    const items = [{ k: 'a' }, { k: 'b' }, { k: 'b' }, { k: 'b' }, { k: 'c' }];
+    const handle = create_RicDOM('#app', {
+      tick: 0,
+      render: (s) => ({ tag: 'ul', ctx: items.map((it, i) => (
+        { tag: 'li', key: it.k, ctx: [`${it.k}#${i} r${s.tick}`] }
+      ))}),
+    });
+    await flush();
+
+    const counts = [document.querySelectorAll('li').length];
+    for (let r = 1; r <= 4; r++) {
+      handle.tick = r;
+      await flush();
+      counts.push(document.querySelectorAll('li').length);
+    }
+
+    assert.deepEqual(counts, [5, 5, 5, 5, 5], '重複 key があっても子要素数は 5 のまま');
+
+    // テキストは最新の render 内容、順序は items の順のまま
+    const texts = Array.from(document.querySelectorAll('li')).map((li) => li.textContent);
+    assert.deepEqual(texts, ['a#0 r4', 'b#1 r4', 'b#2 r4', 'b#3 r4', 'c#4 r4']);
+  });
+
+  test('重複した key の DOM ノードは (位置ベースで) 再利用される', async () => {
+    const { create_RicDOM } = require('../src/ricdom');
+    const handle = create_RicDOM('#app', {
+      tick: 0,
+      render: (s) => {
+        void s.tick;
+        return { tag: 'ul', ctx: [
+          { tag: 'li', key: 'b', ctx: ['b-1'] },
+          { tag: 'li', key: 'b', ctx: ['b-2'] },
+          { tag: 'li', key: 'b', ctx: ['b-3'] },
+        ]};
+      },
+    });
+    await flush();
+
+    const before = Array.from(document.querySelectorAll('li'));
+    assert.equal(before.length, 3);
+
+    handle.tick++;
+    await flush();
+
+    const after = Array.from(document.querySelectorAll('li'));
+    assert.equal(after.length, 3, '子要素数は増殖しない');
+    // 同じ index にある DOM ノードが再利用される (identity 維持) — 新規生成されていない
+    assert.equal(after[0], before[0], '1 番目の重複 key ノードが再利用される');
+    assert.equal(after[1], before[1], '2 番目の重複 key ノードが再利用される');
+    assert.equal(after[2], before[2], '3 番目の重複 key ノードが再利用される');
+  });
+
+  test('重複が解消された次の render で余分な DOM が消える', async () => {
+    const { create_RicDOM } = require('../src/ricdom');
+    const handle = create_RicDOM('#app', {
+      items: [{ k: 'b' }, { k: 'b' }, { k: 'b' }],
+      render: (s) => ({ tag: 'ul', ctx: s.items.map((it) => (
+        { tag: 'li', key: it.k, ctx: [it.k] }
+      ))}),
+    });
+    await flush();
+    assert.equal(document.querySelectorAll('li').length, 3, '重複 key のまま 3 件生成される');
+
+    // 重複を解消 (b が 1 件だけに)
+    handle.items = [{ k: 'b' }];
+    await flush();
+
+    assert.equal(document.querySelectorAll('li').length, 1, '余分な DOM は削除される');
+  });
+
+  test('number 型の key が重複した場合も同様に増殖しない', async () => {
+    const { create_RicDOM } = require('../src/ricdom');
+    const items = [{ k: 1 }, { k: 2 }, { k: 2 }, { k: 3 }];
+    const handle = create_RicDOM('#app', {
+      tick: 0,
+      render: (s) => ({ tag: 'ul', ctx: items.map((it, i) => (
+        { tag: 'li', key: it.k, ctx: [`${it.k}#${i} r${s.tick}`] }
+      ))}),
+    });
+    await flush();
+
+    const counts = [document.querySelectorAll('li').length];
+    for (let r = 1; r <= 3; r++) {
+      handle.tick = r;
+      await flush();
+      counts.push(document.querySelectorAll('li').length);
+    }
+
+    assert.deepEqual(counts, [4, 4, 4, 4], 'number key の重複でも子要素数は 4 のまま');
+  });
+
+  // 統括レビュー (2026-09-04) で指摘された過剰修正の回帰テスト。
+  //
+  // 上の「重複 key」対応で next 側を「keyed だが map miss なら unkeyed 経路へ」と
+  // 広く倒すと、重複ではない *新規 key* (prev に存在せず、この pass でも初出) の要素
+  // まで、同 tag の unkeyed prev DOM を奪えてしまっていた。これは keyed/unkeyed が
+  // 混在するリストで、unkeyed 側の入力状態 (input の値など) が無関係な新規 keyed
+  // 要素に移ってしまうバグ修正範囲外の挙動変更だった。
+  // next_seen_keys で「この pass で既出の key か」を区別し、新規 key は素直に
+  // 新規生成する (= unkeyed プールを消費しない) ことで防ぐ。
+  test('新規 key (prev に無い key) は同 tag の unkeyed prev DOM を奪わない', async () => {
+    const { create_RicDOM } = require('../src/ricdom');
+    const handle = create_RicDOM('#app', {
+      mode: 'before',
+      render: (s) => ({ tag: 'ul', ctx: s.mode === 'before' ? [
+        { tag: 'li', key: 'A', ctx: [{ tag: 'input', type: 'text', value: 'a-val' }] },
+        { tag: 'li', ctx: [{ tag: 'input', type: 'text', value: 'x-val' }] },   // unkeyed X
+      ] : [
+        { tag: 'li', key: 'B', ctx: [{ tag: 'input', type: 'text', value: 'b-val' }] },   // 新規 key (prev に無い)
+        { tag: 'li', ctx: [{ tag: 'input', type: 'text', value: 'x-val' }] },   // unkeyed X (変化なし)
+      ]}),
+    });
+    await flush();
+
+    const lis_before = document.querySelectorAll('li');
+    const li_A_before = lis_before[0];
+    const li_X_before = lis_before[1];
+    const input_X = li_X_before.querySelector('input');
+    // user が unkeyed X の input を編集 (state とは無関係な DOM 側の drift)
+    input_X.value = 'x-edited';
+
+    // A を新規 key B に差し替え、X はそのまま
+    handle.mode = 'after';
+    await flush();
+
+    const lis_after = document.querySelectorAll('li');
+    assert.equal(lis_after.length, 2, '子要素数は 2 のまま');
+    // unkeyed X の li は同じ DOM ノードのまま (= 新規 key B に奪われていない)
+    assert.equal(lis_after[1], li_X_before,
+      'unkeyed X の DOM ノードは維持される (新規 key に奪われない)');
+    // keyed B は A の DOM とは別物の新規ノード (map miss かつ pass 内初出なので新規生成)
+    assert.notEqual(lis_after[0], li_A_before, 'keyed B は新規生成された別 DOM ノード');
+    assert.notEqual(lis_after[0], li_X_before,
+      'keyed B は unkeyed X の DOM を奪っていない (別ノード)');
+  });
+});

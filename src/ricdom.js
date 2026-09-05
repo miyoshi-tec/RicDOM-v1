@@ -615,10 +615,14 @@ const patch_children_by_key = (prev_children, next_children, parent_el) => {
   const prev_doms      = Array.from(parent_el.childNodes);
   const prev_keyed_map = new Map();   // key → { normalized, dom }
   const prev_unkeyed   = [];           // [{ normalized, dom }, ...] FIFO
+  // key は兄弟内で一意である前提だが、重複していても増殖・リークしないように
+  // 「2 個目以降は unkeyed 扱いに落とす」(= 最初の 1 個だけが keyed map に入る)。
+  // こうしないと Map.set() が同 key を上書きし、上書きされた側の DOM がどこからも
+  // 参照されなくなって削除パス (末尾の for-of) から漏れる (= render のたびに残留 + 新規生成)。
   for (let i = 0; i < prev_children.length; i++) {
     const normalized = normalize_ric_node(prev_children[i]);
     const dom  = prev_doms[i];
-    if (normalized.node_type === 'element' && normalized.key !== null) {
+    if (normalized.node_type === 'element' && normalized.key !== null && !prev_keyed_map.has(normalized.key)) {
       prev_keyed_map.set(normalized.key, { normalized, dom });
     } else {
       prev_unkeyed.push({ normalized, dom });
@@ -627,22 +631,45 @@ const patch_children_by_key = (prev_children, next_children, parent_el) => {
 
   // 2) next を順に処理して、DOM を target order に組み直す
   let cursor = parent_el.firstChild;   // 「ここに挿入する」位置 (= 次に処理するべき DOM ノード)
+  // next 側でこの pass 中に一度でも出現した key の集合。
+  // 「keyed だが prev_keyed_map に無い」原因は 2 通りあり、区別が必要:
+  //   (a) 重複 key の 2 個目以降 (= この pass で既出) → unkeyed フォールバックへ落として良い
+  //       (prev 側も同じ重複 key を unkeyed 扱いに落としてあるので、位置ベースで対応する)
+  //   (b) 単に prev に存在しない新規 key (= この pass で初出) → フォールバックしてはいけない。
+  //       ここでフォールバックすると、たまたま同じ tag の unkeyed 要素 (無関係な論理
+  //       エンティティ) の DOM を新規 key の要素が奪ってしまう (input の入力状態などが
+  //       無関係な要素に移る)。新規 key は素直に新規生成すべき。
+  // (a)(b) を区別するために next_seen_keys で「この pass で既に見たか」を記録する。
+  const next_seen_keys = new Set();
   for (let i = 0; i < next_children.length; i++) {
     const next_raw  = next_children[i];
     const next_normalized = normalize_ric_node(next_raw);
     let target_dom = null;
     let prev_normalized  = null;
 
+    let matched_via_keyed_map = false;
+    let is_duplicate_key_in_this_pass = false;
     if (next_normalized.node_type === 'element' && next_normalized.key !== null) {
+      is_duplicate_key_in_this_pass = next_seen_keys.has(next_normalized.key);
+      next_seen_keys.add(next_normalized.key);
+
       // keyed: prev_keyed_map から同 key を探して再利用
       const entry = prev_keyed_map.get(next_normalized.key);
       if (entry) {
         target_dom = entry.dom;
         prev_normalized  = entry.normalized;
         prev_keyed_map.delete(next_normalized.key);
+        matched_via_keyed_map = true;
       }
-    } else {
-      // unkeyed: prev_unkeyed の先頭から取り、tag 一致 (or text 同士) なら再利用
+    }
+    // unkeyed フォールバックへ進む条件: そもそも key が無い、または keyed だが
+    // map miss かつ「重複 key の 2 個目以降」であるとき (= 上記 (a))。
+    // keyed で map miss だが初出 (= 上記 (b)、新規 key) のときはフォールバックしない。
+    const should_try_unkeyed_fallback =
+      !matched_via_keyed_map &&
+      (next_normalized.node_type !== 'element' || next_normalized.key === null || is_duplicate_key_in_this_pass);
+    if (should_try_unkeyed_fallback) {
+      // prev_unkeyed の先頭から取り、tag 一致 (or text 同士) なら再利用する。位置ベースのフォールバック。
       if (prev_unkeyed.length > 0) {
         const entry = prev_unkeyed[0];
         const same_type =
