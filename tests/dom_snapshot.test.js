@@ -91,9 +91,11 @@ test('state 変更後にテキストが更新される', async () => {
   // 初回描画確認
   assert.ok(target.textContent.includes('カウント: 0'));
 
-  // state を更新して rAF を待つ
+  // state を更新して、予約された render の完了を観測する (時間待ちではなく next_render)。
+  // v0.4.5 以前は flush_raf() の固定 10ms 待ちだったため、フルスイート負荷時に旧値のまま
+  // assert に入る単発 flake が起きていた (3 回観測、v0.4.6 で見直し)
   panel.count = 5;
-  await flush_raf();
+  await panel.next_render();
 
   assert.ok(target.textContent.includes('カウント: 5'), `textContent="${target.textContent}"`);
 });

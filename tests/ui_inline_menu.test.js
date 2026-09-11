@@ -174,8 +174,10 @@ describe('ui_inline_menu: dev warning (親の positioning)', () => {
     };
   };
 
-  // rAF (= setTimeout(0)) が回るまで待つ
-  const flush = () => new Promise(resolve => setTimeout(resolve, 10));
+  // rAF (= setImmediate) が回るまで待つ。v0.4.5 以前はここだけ固定 10ms の setTimeout で
+  // 待っていて、フルスイート負荷時に警告が出る前に assert に入る単発 flake があった
+  // (18 回中 2 回)。共通ヘルパーの flush は setImmediate の順番で drain するので負荷に依存しない
+  const { flush } = require('./_helpers/jsdom_env');
 
   test('親が position:static (default) のとき警告を出す', async () => {
     const { ui_inline_menu: f, warns, teardown } = setup('');
