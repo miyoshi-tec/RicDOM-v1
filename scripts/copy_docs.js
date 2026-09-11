@@ -10,7 +10,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
+// RICDOM_ROOT: テスト専用の root 差し替え (tests/scripts_pipeline.test.js が一時ディレクトリに
+// 対して実行するため)。実リポジトリに対して走らせると、並列実行中の他テストが読んでいる
+// min.js を上書きして Windows で copyfile が UNKNOWN で落ちる単発 flake があった (v0.4.6)。
+const root = process.env.RICDOM_ROOT ? path.resolve(process.env.RICDOM_ROOT) : path.resolve(__dirname, '..');
 
 // min.js をコピー。
 // REQUIRED = build 失敗時に欠けていたら古い配信版が無言で残ってしまうため exit 1。

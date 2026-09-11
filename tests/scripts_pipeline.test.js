@@ -92,26 +92,55 @@ describe('compress_css_in_js.js', () => {
 // copy_docs.js (冪等スクリプト、実 repo に対して実行)
 // =====================================================================
 
+// v0.4.5 以前は実 repo に対して copy_docs.js を走らせていたが、node --test はファイル単位で
+// 並列プロセスを立てるため、他のテスト (v03_lz_bundle 等) が読んでいる最中の min.js を
+// 上書きすることになり、Windows で copyfile が UNKNOWN (-4094) で落ちる単発 flake があった
+// (18 回中 1 回)。副作用として docs/*.min.js が改行コードだけ dirty になる運用上の煩わしさも
+// 同じ原因。v0.4.6 から、スクリプト本体は一時ディレクトリ (RICDOM_ROOT) に対して実行し、
+// 「実 repo の docs/ が同期済みか」は読み取りだけで確認する 2 段構成にした。
 describe('copy_docs.js', () => {
-  test('実行後 SPEC.md/TUTORIAL.md が docs/ とバイト一致する', () => {
-    const before = fs.readFileSync(path.join(ROOT, 'docs', 'SPEC.md'), 'utf8');
-    const before_tut = fs.readFileSync(path.join(ROOT, 'docs', 'TUTORIAL.md'), 'utf8');
+  test('一時 root に対して実行すると min.js / SPEC.md / TUTORIAL.md が docs/ にバイト一致で複製される', () => {
+    const tmp_root = fs.mkdtempSync(path.join(os.tmpdir(), 'ric-copy-docs-'));
+    fs.mkdirSync(path.join(tmp_root, 'docs'));
+    // REQUIRED 2 本 + OPTIONAL 1 本 (もう 1 本は意図的に置かず、存在時のみコピーされることを見る)
+    const fixtures = {
+      'RicDOM.min.js': 'globalThis.__copy_docs_core = 1;',
+      'RicUI.min.js': 'globalThis.__copy_docs_ui = 2;',
+      'RicDOM.lz.min.js': 'globalThis.__copy_docs_lz = 3;',
+      'SPEC.md': '# spec\n',
+      'TUTORIAL.md': '# tutorial\n',
+    };
+    for (const [name, body] of Object.entries(fixtures)) fs.writeFileSync(path.join(tmp_root, name), body, 'utf8');
 
-    execFileSync('node', [path.join(ROOT, 'scripts', 'copy_docs.js')], { cwd: ROOT });
+    execFileSync('node', [path.join(ROOT, 'scripts', 'copy_docs.js')], {
+      cwd: tmp_root,
+      env: { ...process.env, RICDOM_ROOT: tmp_root },
+    });
 
-    const spec_src = fs.readFileSync(path.join(ROOT, 'SPEC.md'), 'utf8');
-    const spec_docs = fs.readFileSync(path.join(ROOT, 'docs', 'SPEC.md'), 'utf8');
-    const tut_src = fs.readFileSync(path.join(ROOT, 'TUTORIAL.md'), 'utf8');
-    const tut_docs = fs.readFileSync(path.join(ROOT, 'docs', 'TUTORIAL.md'), 'utf8');
+    for (const [name, body] of Object.entries(fixtures)) {
+      assert.equal(fs.readFileSync(path.join(tmp_root, 'docs', name), 'utf8'), body, `${name} が docs/ にバイト一致で複製されていない`);
+    }
+    assert.ok(!fs.existsSync(path.join(tmp_root, 'docs', 'RicUI.lz.min.js')), '存在しない OPTIONAL ファイルは docs/ に作られない');
+  });
 
-    assert.equal(spec_src, spec_docs, 'SPEC.md と docs/SPEC.md がバイト一致しない');
-    assert.equal(tut_src, tut_docs, 'TUTORIAL.md と docs/TUTORIAL.md がバイト一致しない');
+  test('必須の min.js が無ければ exit 1 (古い配信版が無言で残らない)', () => {
+    const tmp_root = fs.mkdtempSync(path.join(os.tmpdir(), 'ric-copy-docs-'));
+    fs.mkdirSync(path.join(tmp_root, 'docs'));
+    const r = spawnSync('node', [path.join(ROOT, 'scripts', 'copy_docs.js')], {
+      cwd: tmp_root,
+      env: { ...process.env, RICDOM_ROOT: tmp_root },
+      encoding: 'utf8',
+    });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /必須ファイルが見つかりません/);
+  });
 
-    // 冪等性の後始末: 実 repo 実行で内容差分が無ければ何もしない。
-    // (min.js は既存状態依存なので比較対象にしない。SPEC/TUTORIAL は
-    //  既にリポジトリ内で同期済みのはずなので、実行前後で内容が変わらないことも確認する)
-    assert.equal(before, spec_docs, 'copy_docs 実行で docs/SPEC.md の内容が変わった (drift の疑い)');
-    assert.equal(before_tut, tut_docs, 'copy_docs 実行で docs/TUTORIAL.md の内容が変わった (drift の疑い)');
+  test('実 repo の docs/SPEC.md・docs/TUTORIAL.md はソースと同期済み (読み取りのみ、drift 検知)', () => {
+    for (const f of ['SPEC.md', 'TUTORIAL.md']) {
+      const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      const docs = fs.readFileSync(path.join(ROOT, 'docs', f), 'utf8');
+      assert.equal(src, docs, `${f} と docs/${f} がバイト一致しない (copy_docs.js の実行漏れ)`);
+    }
   });
 });
 

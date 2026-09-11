@@ -11,7 +11,7 @@
 const { test, describe, beforeEach } = require('node:test');
 const { strict: assert } = require('node:assert');
 
-const { setup_jsdom } = require('./_helpers/jsdom_env');
+const { setup_jsdom, flush } = require('./_helpers/jsdom_env');
 
 // console.warn をキャプチャするヘルパ
 const capture_warns = () => {
@@ -47,7 +47,7 @@ describe('safe_notify: state に正しく置いたファクトリは warn しな
 
       // collapse をトグル — 正しく state に置いていれば __notify 経由で再描画
       s.split.toggle();
-      await new Promise(r => setTimeout(r, 10));
+      await flush(); // 固定 10ms ではなく rAF (setImmediate) の drain で待つ (v0.4.6)
 
       const warned = w.captured.filter(s => s.includes('has no __notify'));
       assert.equal(warned.length, 0, '正規使用で warn が出てはいけない');
